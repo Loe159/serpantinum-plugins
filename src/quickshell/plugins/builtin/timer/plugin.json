@@ -1,0 +1,10 @@
+{
+  "id": "serpantinum.timer",
+  "name": "Timer",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "entry": "Plugin.qml",
+  "enabledByDefault": true,
+  "description": "Minimal countdown timer used to validate the Serpantinum plugin loader.",
+  "capabilities": ["ipc", "panel"]
+}
