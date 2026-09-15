@@ -52,6 +52,26 @@ SideBarBase {
         return getWidget(moduleId);
     }
 
+    function isPluginInCenter(moduleId) {
+        for (let i = 0; i < centerArr.length; ++i) {
+            const item = centerArr[i];
+            if (Array.isArray(item)) {
+                if (item.indexOf(moduleId) !== -1) return true;
+            } else if (item === moduleId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function pluginTargetY(moduleId, widget) {
+        if (isPluginInCenter(moduleId) && !isModuleGrouped(moduleId)) {
+            const h = widget && widget.targetHeight !== undefined ? widget.targetHeight : (widget ? widget.height : 0);
+            return Math.round((root.height - h) / 2);
+        }
+        return root.getModuleY(moduleId, root.layoutState);
+    }
+
     Repeater {
         id: pluginModules
         model: PluginManager.barPlugins
@@ -73,7 +93,7 @@ SideBarBase {
             isGrouped: root.isModuleGrouped(moduleId)
             layoutAnimationsEnabled: root.layoutAnimationsEnabled
             targetX: root.getModuleX(pluginBar)
-            targetY: root.getModuleY(moduleId, root.layoutState)
+            targetY: root.pluginTargetY(moduleId, pluginBar)
             z: 10
         }
     }

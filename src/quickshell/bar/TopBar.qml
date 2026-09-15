@@ -22,9 +22,6 @@ TopBarBase {
         return null;
     }
 
-    // Override the native width resolver. Base TopBar calculations call this
-    // method as well, so plugin modules participate in layout, grouping,
-    // collision avoidance and the dynamic bar background exactly like natives.
     function getW(moduleId) {
         if (PluginManager.isBarModuleId(moduleId)) {
             const pluginWidget = getPluginWidget(moduleId);
@@ -50,11 +47,33 @@ TopBarBase {
         return 0;
     }
 
-    // Group backgrounds ask the bar for the positioned item. Use the inherited
-    // getWidget() for native modules and our dynamic registry for plugins.
     function getPositionedWidget(moduleId) {
         if (PluginManager.isBarModuleId(moduleId)) return getPluginWidget(moduleId);
         return getWidget(moduleId);
+    }
+
+    function isPluginInCenter(moduleId) {
+        for (let i = 0; i < centerArr.length; ++i) {
+            const item = centerArr[i];
+            if (Array.isArray(item)) {
+                if (item.indexOf(moduleId) !== -1) return true;
+            } else if (item === moduleId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function pluginTargetX(moduleId, widget) {
+        // A standalone plugin placed in the center lane should visually be
+        // centered as well. TopBarBase does not include dynamic plugin widths in
+        // its static native width table, which otherwise pushes the plugin to
+        // the right edge of the center lane.
+        if (isPluginInCenter(moduleId) && !isModuleGrouped(moduleId)) {
+            const w = widget && widget.targetWidth !== undefined ? widget.targetWidth : (widget ? widget.width : 0);
+            return Math.round((root.width - w) / 2);
+        }
+        return root.getModuleX(moduleId, root.layoutState);
     }
 
     Repeater {
@@ -77,7 +96,7 @@ TopBarBase {
             moduleActive: root.isModuleActive(moduleId) && PluginManager.isEnabled(pluginData)
             isGrouped: root.isModuleGrouped(moduleId)
             layoutAnimationsEnabled: root.layoutAnimationsEnabled
-            targetX: root.getModuleX(moduleId, root.layoutState)
+            targetX: root.pluginTargetX(moduleId, pluginBar)
             targetY: root.getModuleY(pluginBar)
             z: 10
         }

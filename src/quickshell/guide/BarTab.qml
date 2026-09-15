@@ -20,76 +20,15 @@ BarTabBase {
         return ThemeBackend.mauve;
     }
 
-    function getModuleInfo(id) {
-        if (PluginManager.isBarModuleId(id)) {
-            const plugin = PluginManager.pluginForBarModule(id);
-            return {
-                "moduleId": id,
-                "moduleLabel": plugin ? (plugin.barLabel || plugin.name || plugin.id) : id,
-                "moduleIcon": plugin ? (plugin.barIcon || plugin.icon || "󰏗") : "󰏗",
-                "moduleColor": colorToString(pluginAccent(plugin)),
-                "isPlaceholder": false,
-                "placeholderWidth": 0,
-                "groupId": ""
-            };
-        }
-
-        let labels = {
-            "left": I18n.t("guide.bar.modules.actions"),
-            "workspaces": I18n.t("guide.bar.modules.workspaces"),
-            "focus": I18n.t("guide.bar.modules.focus"),
-            "timedate": I18n.t("guide.bar.modules.timedate"),
-            "info": I18n.t("guide.bar.modules.info"),
-            "weather": I18n.t("guide.bar.modules.weather"),
-            "media": I18n.t("guide.bar.modules.media"),
-            "vis": I18n.t("guide.bar.modules.vis"),
-            "tray": I18n.t("guide.bar.modules.tray"),
-            "sysmon": I18n.t("guide.bar.modules.sysmon"),
-            "kb": I18n.t("guide.bar.modules.keyboard"),
-            "wifi": I18n.t("guide.bar.modules.network"),
-            "bt": I18n.t("guide.bar.modules.bluetooth"),
-            "vol": I18n.t("guide.bar.modules.volume"),
-            "bat": I18n.t("guide.bar.modules.battery")
-        };
-        let icons = {
-            "left": "󰍜",
-            "workspaces": "󰮯",
-            "focus": "󰈈",
-            "timedate": "󰃰",
-            "info": "󰋼",
-            "weather": "󰖐",
-            "media": "󰎈",
-            "vis": "󰝚",
-            "tray": "󱊞",
-            "sysmon": "󰍛",
-            "kb": "󰌌",
-            "wifi": "󰤨",
-            "bt": "󰂲",
-            "vol": "󰕾",
-            "bat": "󰁹"
-        };
-        let colors = {
-            "left": ThemeBackend.blue,
-            "workspaces": ThemeBackend.mauve,
-            "focus": ThemeBackend.teal,
-            "timedate": ThemeBackend.peach,
-            "info": ThemeBackend.red,
-            "weather": ThemeBackend.yellow,
-            "media": ThemeBackend.green,
-            "vis": ThemeBackend.mauve,
-            "tray": ThemeBackend.yellow,
-            "sysmon": ThemeBackend.mauve,
-            "kb": ThemeBackend.text,
-            "wifi": ThemeBackend.blue,
-            "bt": ThemeBackend.mauve,
-            "vol": ThemeBackend.peach,
-            "bat": ThemeBackend.green
-        };
+    // Keep plugin metadata separate from BarTabBase.getModuleInfo(). Shadowing
+    // the base method makes the dynamically loaded Bar settings page unreliable.
+    function getPluginModuleInfo(id) {
+        const plugin = PluginManager.pluginForBarModule(id);
         return {
             "moduleId": id,
-            "moduleLabel": labels[id] || id,
-            "moduleIcon": icons[id] || "󰅂",
-            "moduleColor": colorToString(colors[id] || ThemeBackend.text),
+            "moduleLabel": plugin ? (plugin.barLabel || plugin.name || plugin.id) : id,
+            "moduleIcon": plugin ? (plugin.barIcon || plugin.icon || "󰏗") : "󰏗",
+            "moduleColor": colorToString(pluginAccent(plugin)),
             "isPlaceholder": false,
             "placeholderWidth": 0,
             "groupId": ""
@@ -129,7 +68,7 @@ BarTabBase {
         for (let i = 0; i < plugins.length; ++i) {
             const moduleId = PluginManager.barModuleId(plugins[i]);
             if (!moduleExistsInEditor(moduleId)) {
-                available.append(getModuleInfo(moduleId));
+                available.append(getPluginModuleInfo(moduleId));
             }
         }
     }
