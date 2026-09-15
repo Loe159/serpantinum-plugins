@@ -10,7 +10,6 @@ Item {
     width: 0
     height: 0
 
-    // Required by PluginHost.
     property var pluginMetadata: ({})
     property string pluginDirectory: ""
 
@@ -19,10 +18,26 @@ Item {
     property bool counting: false
     property bool panelVisible: false
 
+    readonly property string topbarText: formatTime(remainingSeconds)
+    readonly property string topbarIcon: "󰔛"
+    readonly property color topbarColor: counting ? ThemeBackend.green : ThemeBackend.mauve
+
     function formatTime(seconds) {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return mins.toString().padStart(2, "0") + ":" + secs.toString().padStart(2, "0");
+    }
+
+    function togglePanel() {
+        panelVisible = !panelVisible;
+    }
+
+    function showPanel() {
+        panelVisible = true;
+    }
+
+    function hidePanel() {
+        panelVisible = false;
     }
 
     function startTimer(seconds) {
@@ -58,30 +73,17 @@ Item {
     IpcHandler {
         target: "plugin-timer"
 
-        function toggle(): void {
-            root.panelVisible = !root.panelVisible;
-        }
-
-        function show(): void {
-            root.panelVisible = true;
-        }
-
-        function hide(): void {
-            root.panelVisible = false;
-        }
+        function toggle(): void { root.togglePanel(); }
+        function show(): void { root.showPanel(); }
+        function hide(): void { root.hidePanel(); }
 
         function start(seconds: string): void {
             root.startTimer(seconds);
             root.panelVisible = true;
         }
 
-        function pause(): void {
-            root.pauseTimer();
-        }
-
-        function reset(): void {
-            root.resetTimer();
-        }
+        function pause(): void { root.pauseTimer(); }
+        function reset(): void { root.resetTimer(); }
     }
 
     PanelWindow {
@@ -201,7 +203,7 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.panelVisible = false
+                            onClicked: root.hidePanel()
                         }
                     }
                 }

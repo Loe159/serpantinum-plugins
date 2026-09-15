@@ -31,6 +31,14 @@ Item {
             }
             source: active ? PluginManager.entryUrl(pluginData) : ""
 
+            onActiveChanged: {
+                if (!active) PluginManager.unregisterInstance(pluginData.id, item);
+            }
+
+            onItemChanged: {
+                if (!item) PluginManager.unregisterInstance(pluginData.id);
+            }
+
             onLoaded: {
                 if (!item) {
                     PluginManager.reportFailed(pluginData.id, "entry loaded without a root object");
@@ -48,14 +56,18 @@ Item {
                     return;
                 }
 
+                PluginManager.registerInstance(pluginData.id, item);
                 PluginManager.reportLoaded(pluginData.id);
             }
 
             onStatusChanged: {
                 if (status === Loader.Error) {
+                    PluginManager.unregisterInstance(pluginData.id);
                     PluginManager.reportFailed(pluginData.id, "QML loader error for " + source);
                 }
             }
+
+            Component.onDestruction: PluginManager.unregisterInstance(pluginData.id, item)
         }
     }
 }

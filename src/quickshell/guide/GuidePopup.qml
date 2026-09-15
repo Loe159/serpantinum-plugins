@@ -51,7 +51,8 @@ Item {
         { id: "Notifications", key: "notifications", name: "Notifications", icon: "󰂚", file: "notifications/NotificationsTab.qml" },
         { id: "Wellbeing", key: "wellbeing", name: "Wellbeing", icon: "󰄉", file: "wellbeing/DigitalWellbeingTab.qml" },        
         { id: "Idle", key: "idle", name: "Idle", icon: "󰒲", file: "IdleTab.qml" },
-        { id: "About", key: "about", name: "About", icon: "", file: "AboutTab.qml" }
+        { id: "About", key: "about", name: "About", icon: "", file: "AboutTab.qml" },
+        { id: "Plugins", key: "plugins", name: "Plugins", icon: "󰏗", file: "PluginsTab.qml" }
     ]
 
     StackView.onStatusChanged: {
@@ -489,7 +490,8 @@ Item {
                                 tabNotifications,
                                 tabWellbeing,
                                 tabIdle,
-                                tabAbout
+                                tabAbout,
+                                tabPlugins
                             ]
 
                             Rectangle {
@@ -1508,6 +1510,74 @@ Item {
                                     }
                                 }
                             }
+
+                            Rectangle {
+                                id: tabPlugins
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: root.s(44)
+                                implicitHeight: root.s(44)
+                                radius: ThemeBackend.borderRadius
+                                z: 1
+
+                                opacity: root.getTabOpacity(12)
+                                transform: Translate { x: root.s(-24) * (1.0 - root.getTabProgress(12)) }
+
+                                property bool isDirectActive: root.currentTab === 12
+
+                                color: tabPluginsMa.containsMouse && !isDirectActive ? Qt.alpha(ThemeBackend.surface1, 0.5) : "transparent"
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                scale: tabPluginsMa.pressed ? 0.98 : 1.0
+                                Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: root.s(10) + (tabPlugins.isDirectActive ? root.s(4) : 0)
+                                    anchors.rightMargin: root.s(14)
+                                    spacing: root.s(10)
+
+                                    Behavior on anchors.leftMargin { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
+
+                                    IconButton {
+                                        enabled: false
+                                        size: root.s(32)
+                                        Layout.preferredWidth: root.s(32)
+                                        Layout.preferredHeight: root.s(32)
+                                        Layout.alignment: Qt.AlignVCenter
+                                        cornerRadius: ThemeBackend.borderRadius
+                                        buttonIcon: "󰏗"
+                                        iconFontSize: root.s(16)
+                                        accentColor: ThemeBackend.surface0
+                                        textColor: "#ffffff"
+                                    }
+
+                                    Text {
+                                        text: I18n.t("guide.tabs.plugins", "Plugins")
+                                        font.family: ThemeBackend.fontFamily
+                                        font.weight: tabPlugins.isDirectActive ? Font.Bold : Font.Medium
+                                        font.pixelSize: root.s(13)
+                                        color: tabPlugins.isDirectActive 
+                                            ? ThemeBackend.crust 
+                                            : (tabPluginsMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
+                                        Layout.fillWidth: true
+                                        Layout.alignment: Qt.AlignVCenter
+                                        elide: Text.ElideRight
+                                        Behavior on color { ColorAnimation { duration: 150 } }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: tabPluginsMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.expandedTab = -1;
+                                        root.currentTab = 12;
+                                        root.currentSubTab = 0;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -1522,8 +1592,8 @@ Item {
                         textFontSize: root.s(13)
                         accentColor: ThemeBackend.green
                         textColor: ThemeBackend.crust
-                        opacity: root.getTabOpacity(12)
-                        transform: Translate { x: root.s(-24) * (1.0 - root.getTabProgress(12)) }
+                        opacity: root.getTabOpacity(13)
+                        transform: Translate { x: root.s(-24) * (1.0 - root.getTabProgress(13)) }
                         onClicked: {
                             root.gotoTab("about");
                         }
