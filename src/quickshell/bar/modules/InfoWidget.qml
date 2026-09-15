@@ -31,17 +31,7 @@ Rectangle {
     readonly property string timerIcon: TimerState.icon
     readonly property color timerColor: TimerState.colorType === "green" ? ((typeof ThemeBackend !== "undefined" && ThemeBackend.green !== undefined) ? ThemeBackend.green : Qt.rgba(166/255, 227/255, 161/255, 1.0)) : ThemeBackend.mauve
 
-    readonly property var pluginTimerMetadata: PluginManager.pluginById("serpantinum.timer")
-    readonly property var pluginTimer: PluginManager.instanceById("serpantinum.timer")
-    readonly property bool isPluginTimerActive: pluginTimer !== null
-        && pluginTimerMetadata !== null
-        && PluginManager.isEnabled(pluginTimerMetadata)
-        && PluginManager.isTopbarEnabled(pluginTimerMetadata)
-    readonly property string pluginTimerTimeFormatted: pluginTimer && pluginTimer.topbarText !== undefined ? pluginTimer.topbarText : "00:00"
-    readonly property string pluginTimerIcon: pluginTimer && pluginTimer.topbarIcon !== undefined ? pluginTimer.topbarIcon : "󰔛"
-    readonly property color pluginTimerColor: pluginTimer && pluginTimer.topbarColor !== undefined ? pluginTimer.topbarColor : ThemeBackend.mauve
-
-    readonly property bool hasActiveContent: isRecording || isTimerActive || isPluginTimerActive
+    readonly property bool hasActiveContent: isRecording || isTimerActive
 
     function checkRecording() {
         if (infoWidgetRoot.isCleaningUp || !infoWidgetRoot.moduleActive || infoWidgetRoot.recCacheDir === "") return;
@@ -139,18 +129,16 @@ Rectangle {
 
     property alias recRow: recRow
     property alias timerRow: timerRow
-    property alias pluginTimerRow: pluginTimerRow
 
     property real horizontalPadding: barWindow ? barWindow.s(isCompact ? 10 : 12) : (isCompact ? 10 : 12)
     property real innerSpacing: barWindow ? barWindow.s(isCompact ? 10 : 12) : (isCompact ? 10 : 12)
 
     property real recWidth: isRecording ? recRow.implicitWidth : 0
     property real timerWidth: isTimerActive ? timerRow.implicitWidth : 0
-    property real pluginTimerWidth: isPluginTimerActive ? pluginTimerRow.implicitWidth : 0
-    property int activeItemCount: (isRecording ? 1 : 0) + (isTimerActive ? 1 : 0) + (isPluginTimerActive ? 1 : 0)
+    property int activeItemCount: (isRecording ? 1 : 0) + (isTimerActive ? 1 : 0)
     property real activeSpacing: activeItemCount > 1 ? (activeItemCount - 1) * innerSpacing : 0
 
-    property real baseWidth: hasActiveContent ? (recWidth + timerWidth + pluginTimerWidth + activeSpacing + (horizontalPadding * 2)) : 0
+    property real baseWidth: hasActiveContent ? (recWidth + timerWidth + activeSpacing + (horizontalPadding * 2)) : 0
     property real baseHeight: barWindow ? (isGrouped ? barWindow.barHeight - 8 : ((isSolid && distinctPills) ? barWindow.barHeight - 6 : barWindow.barHeight)) : (isGrouped ? 22 : ((isSolid && distinctPills) ? 24 : 30))
 
     property real targetHeight: baseHeight
@@ -302,51 +290,6 @@ Rectangle {
                 }
             }
 
-            Row {
-                id: pluginTimerRow
-                spacing: barWindow ? barWindow.s(infoWidgetRoot.isCompact ? 5 : 6) : (infoWidgetRoot.isCompact ? 5 : 6)
-                visible: infoWidgetRoot.isPluginTimerActive
-                opacity: visible ? 1.0 : 0.0
-                scale: pluginTimerHover.hovered ? 1.05 : 1.0
-
-                Behavior on opacity {
-                    enabled: barWindow ? !barWindow.positionChanging : true
-                    NumberAnimation { duration: 300 }
-                }
-                Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutQuint } }
-
-                Text {
-                    text: infoWidgetRoot.pluginTimerIcon
-                    font.family: "Iosevka Nerd Font"
-                    font.pixelSize: barWindow ? barWindow.s(infoWidgetRoot.isCompact ? 12 : 13) : (infoWidgetRoot.isCompact ? 12 : 13)
-                    color: pluginTimerHover.hovered ? Qt.lighter(infoWidgetRoot.pluginTimerColor, 1.15) : infoWidgetRoot.pluginTimerColor
-                    anchors.verticalCenter: parent.verticalCenter
-                    Behavior on color { ColorAnimation { duration: 180 } }
-                }
-
-                Text {
-                    text: infoWidgetRoot.pluginTimerTimeFormatted
-                    font.family: ThemeBackend.fontFamily
-                    font.pixelSize: barWindow ? barWindow.s(infoWidgetRoot.isCompact ? 13 : 14) : (infoWidgetRoot.isCompact ? 13 : 14)
-                    font.weight: Font.Bold
-                    color: pluginTimerHover.hovered ? Qt.lighter(infoWidgetRoot.pluginTimerColor, 1.15) : infoWidgetRoot.pluginTimerColor
-                    anchors.verticalCenter: parent.verticalCenter
-                    Behavior on color { ColorAnimation { duration: 180 } }
-                }
-
-                HoverHandler {
-                    id: pluginTimerHover
-                    cursorShape: Qt.PointingHandCursor
-                }
-
-                TapHandler {
-                    onTapped: {
-                        if (infoWidgetRoot.pluginTimer && typeof infoWidgetRoot.pluginTimer.togglePanel === "function") {
-                            infoWidgetRoot.pluginTimer.togglePanel();
-                        }
-                    }
-                }
-            }
         }
     }
 

@@ -12,6 +12,7 @@ Idle 1.0 idle/Idle.qml
 Lock 1.0 lock/Lock.qml
 
 PluginHost 1.0 plugins/PluginHost.qml
+PluginBarModule 1.0 plugins/PluginBarModule.qml
 singleton PluginManager 1.0 plugins/PluginManager.qml
 
 Start 1.0 serp/Start.qml

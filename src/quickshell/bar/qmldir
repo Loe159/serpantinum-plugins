@@ -1,3 +1,5 @@
 Bar 1.0 Bar.qml
+SideBarBase 1.0 SideBarBase.qml
 SideBar 1.0 SideBar.qml
+TopBarBase 1.0 TopBarBase.qml
 TopBar 1.0 TopBar.qml

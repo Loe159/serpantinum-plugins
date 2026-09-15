@@ -1,12 +1,14 @@
 {
   "id": "serpantinum.timer",
   "name": "Timer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "apiVersion": 1,
   "entry": "Plugin.qml",
+  "barEntry": "Bar.qml",
   "enabledByDefault": true,
   "topbarByDefault": false,
-  "capabilities": ["panel", "topbar"],
+  "capabilities": ["panel", "bar"],
   "icon": "󰔛",
-  "description": "A native countdown timer with a Serpantinum panel and top-bar indicator."
+  "barColor": "mauve",
+  "description": "A native countdown timer with a Serpantinum panel and first-class bar module."
 }

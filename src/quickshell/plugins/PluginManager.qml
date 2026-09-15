@@ -12,6 +12,7 @@ Item {
     visible: false
 
     readonly property int apiVersion: 1
+    readonly property string barModulePrefix: "plugin:"
     readonly property string builtinPluginDir: Caching.qsDir + "/plugins/builtin"
     readonly property string userPluginDir: {
         const xdgConfig = Quickshell.env("XDG_CONFIG_HOME");
@@ -19,6 +20,7 @@ Item {
     }
 
     property var plugins: []
+    readonly property var barPlugins: plugins.filter(p => root.supportsBar(p))
     property var instances: ({})
     property bool scanning: false
     property string lastError: ""
@@ -57,9 +59,14 @@ Item {
             "            entry_path = (manifest_path.parent / entry).resolve()",
             "            if not entry_path.is_file():",
             "                raise ValueError(f'entry not found: {entry}')",
+            "            bar_entry = str(data.get('barEntry') or '').strip()",
+            "            if bar_entry and not (manifest_path.parent / bar_entry).is_file():",
+            "                raise ValueError(f'bar entry not found: {bar_entry}')",
             "            data['id'] = plugin_id",
             "            data['apiVersion'] = api",
             "            data['entry'] = entry",
+            "            if bar_entry:",
+            "                data['barEntry'] = bar_entry",
             "            data['_dir'] = str(manifest_path.parent.resolve())",
             "            data['_manifest'] = str(manifest_path.resolve())",
             "            data['_source'] = source",
@@ -101,6 +108,9 @@ Item {
             "    entry = str(data.get('entry') or 'Plugin.qml')",
             "    if not (repo / entry).is_file():",
             "        raise ValueError(f'entry not found: {entry}')",
+            "    bar_entry = str(data.get('barEntry') or '').strip()",
+            "    if bar_entry and not (repo / bar_entry).is_file():",
+            "        raise ValueError(f'bar entry not found: {bar_entry}')",
             "    dirname = re.sub(r'[^A-Za-z0-9._-]+', '-', plugin_id).strip('-') or 'plugin'",
             "    dest = root / dirname",
             "    if dest.exists():",
@@ -165,27 +175,130 @@ Item {
         updatePluginSetting(pluginId, "enabled", !!enabled);
     }
 
+    function supportsBar(plugin) {
+        return !!(plugin && typeof plugin.barEntry === "string" && plugin.barEntry.trim() !== "");
+    }
+
     function supportsTopbar(plugin) {
-        if (!plugin) return false;
-        if (plugin.barEntry) return true;
-        if (Array.isArray(plugin.capabilities) && plugin.capabilities.indexOf("topbar") !== -1) return true;
-        return plugin.topbar === true;
+        return supportsBar(plugin);
     }
 
-    function isTopbarEnabled(plugin) {
-        if (!plugin || !supportsTopbar(plugin)) return false;
-        const perPlugin = pluginSettings(plugin.id);
-        if (perPlugin.topbar !== undefined) return !!perPlugin.topbar;
-        return plugin.topbarByDefault === true;
+    function barModuleId(pluginOrId) {
+        const id = typeof pluginOrId === "string" ? pluginOrId : (pluginOrId ? pluginOrId.id : "");
+        return id ? barModulePrefix + id : "";
     }
 
-    function setTopbarEnabled(pluginId, enabled) {
-        updatePluginSetting(pluginId, "topbar", !!enabled);
+    function isBarModuleId(moduleId) {
+        return typeof moduleId === "string" && moduleId.indexOf(barModulePrefix) === 0;
+    }
+
+    function pluginForBarModule(moduleId) {
+        if (!isBarModuleId(moduleId)) return null;
+        return pluginById(moduleId.substring(barModulePrefix.length));
     }
 
     function entryUrl(plugin) {
         if (!plugin || !plugin._dir || !plugin.entry) return "";
         return encodeURI("file://" + plugin._dir + "/" + plugin.entry);
+    }
+
+    function barEntryUrl(plugin) {
+        if (!supportsBar(plugin) || !plugin._dir) return "";
+        return encodeURI("file://" + plugin._dir + "/" + plugin.barEntry);
+    }
+
+    function arrayContainsModule(arr, moduleId) {
+        if (!Array.isArray(arr)) return false;
+        for (let i = 0; i < arr.length; ++i) {
+            const item = arr[i];
+            if (Array.isArray(item)) {
+                if (arrayContainsModule(item, moduleId)) return true;
+            } else if (item === moduleId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function moduleIsPlaced(moduleId) {
+        const bar = Config.getSetting("bar", {});
+        const modules = bar && bar.modules ? bar.modules : {};
+        return arrayContainsModule(modules.left || [], moduleId)
+            || arrayContainsModule(modules.center || [], moduleId)
+            || arrayContainsModule(modules.right || [], moduleId);
+    }
+
+    function removeModuleFromArray(arr, moduleId) {
+        if (!Array.isArray(arr)) return [];
+        let out = [];
+        for (let i = 0; i < arr.length; ++i) {
+            const item = arr[i];
+            if (Array.isArray(item)) {
+                let cleaned = removeModuleFromArray(item, moduleId);
+                if (cleaned.length === 1) out.push(cleaned[0]);
+                else if (cleaned.length > 1) out.push(cleaned);
+            } else if (item !== moduleId) {
+                out.push(item);
+            }
+        }
+        return out;
+    }
+
+    function isTopbarEnabled(plugin) {
+        if (!supportsBar(plugin)) return false;
+        return moduleIsPlaced(barModuleId(plugin));
+    }
+
+    function setTopbarEnabled(pluginId, enabled) {
+        const plugin = pluginById(pluginId);
+        if (!plugin || !supportsBar(plugin)) return;
+
+        const moduleId = barModuleId(plugin);
+        let bar = Config.getSetting("bar", {});
+        if (!bar || typeof bar !== "object" || Array.isArray(bar)) bar = {};
+        let modules = bar.modules;
+        if (!modules || typeof modules !== "object" || Array.isArray(modules)) {
+            modules = { left: [], center: [], right: [] };
+        } else {
+            modules = JSON.parse(JSON.stringify(modules));
+        }
+        if (!Array.isArray(modules.left)) modules.left = [];
+        if (!Array.isArray(modules.center)) modules.center = [];
+        if (!Array.isArray(modules.right)) modules.right = [];
+
+        if (enabled) {
+            if (!arrayContainsModule(modules.left, moduleId)
+                    && !arrayContainsModule(modules.center, moduleId)
+                    && !arrayContainsModule(modules.right, moduleId)) {
+                modules.center.push(moduleId);
+            }
+        } else {
+            modules.left = removeModuleFromArray(modules.left, moduleId);
+            modules.center = removeModuleFromArray(modules.center, moduleId);
+            modules.right = removeModuleFromArray(modules.right, moduleId);
+        }
+
+        bar.modules = modules;
+        Config.setSetting("bar", bar);
+        updatePluginSetting(pluginId, "topbar", !!enabled);
+        updatePluginSetting(pluginId, "barPlacementMigrated", true);
+    }
+
+    function migrateLegacyBarPlacements() {
+        for (let i = 0; i < barPlugins.length; ++i) {
+            const plugin = barPlugins[i];
+            const perPlugin = pluginSettings(plugin.id);
+            if (perPlugin.barPlacementMigrated === true) continue;
+
+            const requested = perPlugin.topbar === true
+                || (perPlugin.topbar === undefined && plugin.topbarByDefault === true);
+
+            if (requested && !moduleIsPlaced(barModuleId(plugin))) {
+                setTopbarEnabled(plugin.id, true);
+            } else {
+                updatePluginSetting(plugin.id, "barPlacementMigrated", true);
+            }
+        }
     }
 
     function registerInstance(pluginId, instance) {
@@ -257,6 +370,7 @@ Item {
                         console.warn("[plugins] scan warnings:\n" + root.lastError);
                     }
                     root.refreshed(root.plugins.length);
+                    Qt.callLater(root.migrateLegacyBarPlacements);
                 } catch (e) {
                     root.plugins = [];
                     root.lastError = "failed to parse scanner output: " + e;
