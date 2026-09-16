@@ -17,6 +17,10 @@ Item {
     property int remainingSeconds: defaultSeconds
     property bool counting: false
     property bool panelVisible: false
+    property string panelSection: "center"
+    property string panelBarPosition: "top"
+    property real panelBarThickness: 40
+    property var panelScreen: null
 
     readonly property string topbarText: formatTime(remainingSeconds)
     readonly property string topbarIcon: "󰔛"
@@ -28,11 +32,41 @@ Item {
         return mins.toString().padStart(2, "0") + ":" + secs.toString().padStart(2, "0");
     }
 
+    function syncPanelContext(host) {
+        const pluginId = root.pluginMetadata && root.pluginMetadata.id
+            ? root.pluginMetadata.id
+            : "serpantinum.timer";
+        const moduleId = PluginManager.barModuleId(pluginId);
+        const section = host && host.barSection ? host.barSection : PluginManager.barModuleSection(moduleId);
+        root.panelSection = section || "center";
+
+        if (host && host.barWindow) {
+            root.panelBarPosition = host.barWindow.barPosition || "top";
+            root.panelBarThickness = host.barWindow.barHeight || 40;
+            root.panelScreen = host.barWindow.screen || null;
+            return;
+        }
+
+        const bar = Config.getSetting("bar", {});
+        root.panelBarPosition = bar && bar.position ? bar.position : "top";
+        root.panelBarThickness = bar && bar.height ? Number(bar.height) : 40;
+        if (!root.panelScreen && Quickshell.screens && Quickshell.screens.length > 0) {
+            root.panelScreen = Quickshell.screens[0];
+        }
+    }
+
+    function activateBar(host) {
+        syncPanelContext(host);
+        panelVisible = !panelVisible;
+    }
+
     function togglePanel() {
+        if (!panelVisible) syncPanelContext(null);
         panelVisible = !panelVisible;
     }
 
     function showPanel() {
+        syncPanelContext(null);
         panelVisible = true;
     }
 
@@ -79,7 +113,7 @@ Item {
 
         function start(seconds: string): void {
             root.startTimer(seconds);
-            root.panelVisible = true;
+            root.showPanel();
         }
 
         function pause(): void { root.pauseTimer(); }
@@ -90,9 +124,7 @@ Item {
         id: panel
 
         visible: root.panelVisible
-        screen: (Quickshell.screens && Quickshell.screens.length > 0) ? Quickshell.screens[0] : null
-        implicitWidth: 360
-        implicitHeight: 210
+        screen: root.panelScreen || ((Quickshell.screens && Quickshell.screens.length > 0) ? Quickshell.screens[0] : null)
         color: "transparent"
 
         WlrLayershell.namespace: "serpantinum-plugin-timer"
@@ -102,16 +134,43 @@ Item {
 
         anchors {
             top: true
+            bottom: true
+            left: true
             right: true
         }
 
-        margins {
-            top: 54
-            right: 12
+        mask: Region {
+            item: root.panelVisible ? panelCard : null
         }
 
         Rectangle {
-            anchors.fill: parent
+            id: panelCard
+            width: 360
+            height: 210
+            x: {
+                const gap = 12;
+                if (root.panelBarPosition === "left") {
+                    return root.panelBarThickness + gap;
+                }
+                if (root.panelBarPosition === "right") {
+                    return Math.max(gap, panel.width - width - root.panelBarThickness - gap);
+                }
+                if (root.panelSection === "left") return gap;
+                if (root.panelSection === "right") return Math.max(gap, panel.width - width - gap);
+                return Math.max(gap, (panel.width - width) / 2);
+            }
+            y: {
+                const gap = 12;
+                if (root.panelBarPosition === "top") {
+                    return root.panelBarThickness + gap;
+                }
+                if (root.panelBarPosition === "bottom") {
+                    return Math.max(gap, panel.height - height - root.panelBarThickness - gap);
+                }
+                if (root.panelSection === "left") return gap;
+                if (root.panelSection === "right") return Math.max(gap, panel.height - height - gap);
+                return Math.max(gap, (panel.height - height) / 2);
+            }
             radius: Math.max(12, ThemeBackend.borderRadius * 2)
             color: ThemeBackend.base
             border.width: 1

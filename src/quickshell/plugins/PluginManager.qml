@@ -221,11 +221,16 @@ Item {
     }
 
     function moduleIsPlaced(moduleId) {
+        return barModuleSection(moduleId) !== "";
+    }
+
+    function barModuleSection(moduleId) {
         const bar = Config.getSetting("bar", {});
         const modules = bar && bar.modules ? bar.modules : {};
-        return arrayContainsModule(modules.left || [], moduleId)
-            || arrayContainsModule(modules.center || [], moduleId)
-            || arrayContainsModule(modules.right || [], moduleId);
+        if (arrayContainsModule(modules.left || [], moduleId)) return "left";
+        if (arrayContainsModule(modules.center || [], moduleId)) return "center";
+        if (arrayContainsModule(modules.right || [], moduleId)) return "right";
+        return "";
     }
 
     function removeModuleFromArray(arr, moduleId) {
