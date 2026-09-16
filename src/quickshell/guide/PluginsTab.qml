@@ -129,7 +129,7 @@ Item {
                     Item { Layout.fillWidth: true }
 
                     Text {
-                        text: "plugin.json must be at the repository root"
+                        text: "Supports one root plugin or multiple plugins in subfolders"
                         font.family: ThemeBackend.fontFamily
                         font.pixelSize: rootObj.s(10)
                         color: ThemeBackend.overlay1
