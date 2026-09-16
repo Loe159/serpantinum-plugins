@@ -39,7 +39,8 @@
       "display_widgets": "Widgets",
       "display_general": "General",
       "osd": "On-Screen Display",
-      "dock": "Dock"
+      "dock": "Dock",
+      "plugins": "Plugins"
     },
     "launcher": {
       "position": {
