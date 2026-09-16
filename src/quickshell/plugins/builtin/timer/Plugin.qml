@@ -23,6 +23,27 @@ Item {
     property var panelScreen: null
 
     readonly property string topbarText: formatTime(remainingSeconds)
+
+    function applySettings() {
+        const pluginId = root.pluginMetadata && root.pluginMetadata.id
+            ? root.pluginMetadata.id
+            : "serpantinum.timer";
+        const settings = PluginManager.pluginSettings(pluginId);
+        const configured = Math.max(60, Number(settings.defaultSeconds || 300));
+        if (configured === root.defaultSeconds) return;
+        const previous = root.defaultSeconds;
+        root.defaultSeconds = configured;
+        if (!root.counting && root.remainingSeconds === previous) root.remainingSeconds = configured;
+    }
+
+    Component.onCompleted: applySettings()
+
+    Connections {
+        target: Config
+        function onSettingsLoaded() { root.applySettings(); }
+        function onRawSettingsChanged() { root.applySettings(); }
+    }
+
     readonly property string topbarIcon: "󰔛"
     readonly property color topbarColor: counting ? ThemeBackend.green : ThemeBackend.mauve
 

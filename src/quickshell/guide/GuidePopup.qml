@@ -17,6 +17,7 @@ Item {
     property int currentTab: 0
     property int currentSubTab: 0
     property int expandedTab: -1
+    property string selectedPluginSettingsId: ""
 
     property real colorBlend: 0.0
     property color ambientPurple: Qt.tint(ThemeBackend.mauve, Qt.rgba(ThemeBackend.pink.r, ThemeBackend.pink.g, ThemeBackend.pink.b, colorBlend))
@@ -251,7 +252,13 @@ Item {
         Quickshell.execDetached(["bash", "-c", "echo '" + currentTab + ":" + currentSubTab + "' > '" + Caching.getCacheDir("guide") + "/last_tab.txt'"]);
     }
 
-    onCurrentTabChanged: saveLastTab()
+    onCurrentTabChanged: {
+        saveLastTab();
+        if (currentTab !== 11) {
+            selectedPluginSettingsId = "";
+            if (expandedTab === 11) expandedTab = -1;
+        }
+    }
     onCurrentSubTabChanged: saveLastTab()
 
     FileView {
@@ -446,13 +453,19 @@ Item {
                             color: ThemeBackend.mauve
 
                             property Item activeGroupItem: (root.currentTab >= 0 && root.currentTab < tabsCol.tabItems.length) ? tabsCol.tabItems[root.currentTab] : null
-                            property bool isSubActive: root.currentTab === 2 && root.expandedTab === 2
+                            property bool displaySubActive: root.currentTab === 2 && root.expandedTab === 2
+                            property bool pluginSubActive: root.currentTab === 11 && root.expandedTab === 11 && root.selectedPluginSettingsId !== ""
+                            property bool isSubActive: displaySubActive || pluginSubActive
 
                             property real targetX: isSubActive ? root.s(26) : 0
                             property real targetY: {
                                 let baseY = activeGroupItem ? activeGroupItem.y : (root.currentTab * (root.s(44) + root.s(4)));
-                                if (isSubActive) {
+                                if (displaySubActive) {
                                     return baseY + root.s(44) + root.s(4) + root.currentSubTab * (root.s(36) + root.s(4));
+                                }
+                                if (pluginSubActive) {
+                                    let idx = PluginManager.settingsPlugins.findIndex(p => p.id === root.selectedPluginSettingsId);
+                                    return baseY + root.s(44) + root.s(4) + Math.max(0, idx) * (root.s(36) + root.s(4));
                                 }
                                 return baseY;
                             }
@@ -1443,70 +1456,198 @@ Item {
                                 }
                             }
 
-                            Rectangle {
+                            ColumnLayout {
                                 id: tabPlugins
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: root.s(44)
-                                implicitHeight: root.s(44)
-                                radius: ThemeBackend.borderRadius
-                                z: 1
+                                spacing: 0
 
                                 opacity: root.getTabOpacity(11)
                                 transform: Translate { x: root.s(-24) * (1.0 - root.getTabProgress(11)) }
 
-                                property bool isDirectActive: root.currentTab === 11
+                                property bool isExpanded: root.expandedTab === 11
+                                property real fullSubtabsHeight: PluginManager.settingsPlugins.length * root.s(36)
+                                    + Math.max(0, PluginManager.settingsPlugins.length - 1) * root.s(4)
+                                    + (PluginManager.settingsPlugins.length > 0 ? root.s(8) : 0)
+                                property real expandProgress: isExpanded ? 1.0 : 0.0
+                                Behavior on expandProgress { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
-                                color: tabPluginsMa.containsMouse && !isDirectActive ? Qt.alpha(ThemeBackend.surface1, 0.5) : "transparent"
-                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Rectangle {
+                                    id: tabPluginsHeader
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: root.s(44)
+                                    implicitHeight: root.s(44)
+                                    radius: ThemeBackend.borderRadius
+                                    z: 1
 
-                                scale: tabPluginsMa.pressed ? 0.98 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
+                                    property bool isDirectActive: root.currentTab === 11 && root.selectedPluginSettingsId === ""
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: root.s(10) + (tabPlugins.isDirectActive ? root.s(4) : 0)
-                                    anchors.rightMargin: root.s(14)
-                                    spacing: root.s(10)
+                                    color: tabPluginsMa.containsMouse && !isDirectActive ? Qt.alpha(ThemeBackend.surface1, 0.5) : "transparent"
+                                    Behavior on color { ColorAnimation { duration: 150 } }
 
-                                    Behavior on anchors.leftMargin { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
+                                    scale: tabPluginsMa.pressed ? 0.98 : 1.0
+                                    Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
 
-                                    IconButton {
-                                        enabled: false
-                                        size: root.s(32)
-                                        Layout.preferredWidth: root.s(32)
-                                        Layout.preferredHeight: root.s(32)
-                                        Layout.alignment: Qt.AlignVCenter
-                                        cornerRadius: ThemeBackend.borderRadius
-                                        buttonIcon: "󰏗"
-                                        iconFontSize: root.s(16)
-                                        accentColor: ThemeBackend.surface0
-                                        textColor: "#ffffff"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: root.s(10) + (tabPluginsHeader.isDirectActive ? root.s(4) : 0)
+                                        anchors.rightMargin: root.s(14)
+                                        spacing: root.s(10)
+
+                                        Behavior on anchors.leftMargin { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
+
+                                        IconButton {
+                                            enabled: false
+                                            size: root.s(32)
+                                            Layout.preferredWidth: root.s(32)
+                                            Layout.preferredHeight: root.s(32)
+                                            Layout.alignment: Qt.AlignVCenter
+                                            cornerRadius: ThemeBackend.borderRadius
+                                            buttonIcon: "󰏗"
+                                            iconFontSize: root.s(16)
+                                            accentColor: ThemeBackend.surface0
+                                            textColor: "#ffffff"
+                                        }
+
+                                        Text {
+                                            text: I18n.t("guide.tabs.plugins", "Plugins")
+                                            font.family: ThemeBackend.fontFamily
+                                            font.weight: tabPluginsHeader.isDirectActive ? Font.Bold : Font.Medium
+                                            font.pixelSize: root.s(13)
+                                            color: tabPluginsHeader.isDirectActive
+                                                ? ThemeBackend.crust
+                                                : (tabPluginsMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
+                                            Layout.fillWidth: true
+                                            Layout.alignment: Qt.AlignVCenter
+                                            elide: Text.ElideRight
+                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                        }
+
+                                        Text {
+                                            visible: PluginManager.settingsPlugins.length > 0
+                                            text: "󰅀"
+                                            font.family: ThemeBackend.fontFamily
+                                            font.pixelSize: root.s(14)
+                                            color: tabPluginsHeader.isDirectActive
+                                                ? ThemeBackend.crust
+                                                : (tabPluginsMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
+                                            Layout.alignment: Qt.AlignVCenter
+                                            rotation: tabPlugins.expandProgress * 180 - 180
+                                            Behavior on rotation { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                        }
                                     }
 
-                                    Text {
-                                        text: I18n.t("guide.tabs.plugins", "Plugins")
-                                        font.family: ThemeBackend.fontFamily
-                                        font.weight: tabPlugins.isDirectActive ? Font.Bold : Font.Medium
-                                        font.pixelSize: root.s(13)
-                                        color: tabPlugins.isDirectActive
-                                            ? ThemeBackend.crust 
-                                            : (tabPluginsMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
-                                        Layout.fillWidth: true
-                                        Layout.alignment: Qt.AlignVCenter
-                                        elide: Text.ElideRight
-                                        Behavior on color { ColorAnimation { duration: 150 } }
+                                    MouseArea {
+                                        id: tabPluginsMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.currentTab = 11;
+                                            root.currentSubTab = 0;
+                                            root.selectedPluginSettingsId = "";
+                                            root.expandedTab = root.expandedTab === 11 ? -1 : 11;
+                                        }
                                     }
                                 }
 
-                                MouseArea {
-                                    id: tabPluginsMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.expandedTab = -1;
-                                        root.currentTab = 11;
-                                        root.currentSubTab = 0;
+                                Item {
+                                    visible: tabPlugins.expandProgress > 0.001 && PluginManager.settingsPlugins.length > 0
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: tabPlugins.fullSubtabsHeight * tabPlugins.expandProgress
+                                    implicitHeight: tabPlugins.fullSubtabsHeight * tabPlugins.expandProgress
+                                    opacity: Math.max(0.0, (tabPlugins.expandProgress - 0.15) / 0.85)
+                                    clip: true
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.topMargin: root.s(4)
+                                        anchors.bottomMargin: root.s(4)
+                                        spacing: root.s(6)
+
+                                        Item {
+                                            Layout.preferredWidth: root.s(20)
+                                            Layout.fillHeight: true
+
+                                            Rectangle {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                anchors.top: parent.top
+                                                anchors.bottom: parent.bottom
+                                                anchors.topMargin: root.s(2)
+                                                anchors.bottomMargin: root.s(2)
+                                                width: Math.max(1, root.s(2))
+                                                radius: root.s(1)
+                                                color: Qt.rgba(ThemeBackend.surface2.r, ThemeBackend.surface2.g, ThemeBackend.surface2.b, 0.7)
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: root.s(4)
+
+                                            Repeater {
+                                                model: PluginManager.settingsPlugins
+
+                                                delegate: Rectangle {
+                                                    id: pluginSettingsSubtab
+                                                    required property var modelData
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: root.s(36)
+                                                    implicitHeight: root.s(36)
+                                                    radius: ThemeBackend.borderRadius
+                                                    z: 1
+
+                                                    property bool isSubActive: root.currentTab === 11
+                                                        && root.selectedPluginSettingsId === modelData.id
+
+                                                    color: pluginSettingsMa.containsMouse && !isSubActive
+                                                        ? Qt.alpha(ThemeBackend.surface1, 0.5) : "transparent"
+                                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                                    scale: pluginSettingsMa.pressed ? 0.98 : 1.0
+                                                    Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
+
+                                                    RowLayout {
+                                                        anchors.fill: parent
+                                                        anchors.leftMargin: root.s(8) + (pluginSettingsSubtab.isSubActive ? root.s(4) : 0)
+                                                        anchors.rightMargin: root.s(10)
+                                                        spacing: root.s(8)
+
+                                                        Behavior on anchors.leftMargin { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
+
+                                                        Text {
+                                                            text: modelData.icon || "󰏗"
+                                                            font.family: "Iosevka Nerd Font"
+                                                            font.pixelSize: root.s(13)
+                                                            color: pluginSettingsSubtab.isSubActive ? ThemeBackend.crust : ThemeBackend.subtext0
+                                                        }
+
+                                                        Text {
+                                                            text: modelData.name || modelData.id
+                                                            font.family: ThemeBackend.fontFamily
+                                                            font.weight: pluginSettingsSubtab.isSubActive ? Font.Bold : Font.Medium
+                                                            font.pixelSize: root.s(12)
+                                                            color: pluginSettingsSubtab.isSubActive ? ThemeBackend.crust : ThemeBackend.subtext0
+                                                            Layout.fillWidth: true
+                                                            Layout.alignment: Qt.AlignVCenter
+                                                            elide: Text.ElideRight
+                                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                                        }
+                                                    }
+
+                                                    MouseArea {
+                                                        id: pluginSettingsMa
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.currentTab = 11;
+                                                            root.expandedTab = 11;
+                                                            root.selectedPluginSettingsId = pluginSettingsSubtab.modelData.id;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1635,13 +1776,24 @@ Item {
                             active: !tabContentWrapper.hasSubtabs
                             visible: !tabContentWrapper.hasSubtabs && root.currentTab === tabContentWrapper.parentTabIndex
 
+                            property string loadedKey: ""
+
                             function ensureLoaded() {
-                                if (status === Loader.Null && tabData.file) {
-                                    setSource(tabData.file, {
-                                        "rootObj": root,
-                                        "tabIndex": tabContentWrapper.parentTabIndex
-                                    });
+                                if (!tabData.file) return;
+                                let file = tabData.file;
+                                let key = file;
+                                let props = {
+                                    "rootObj": root,
+                                    "tabIndex": tabContentWrapper.parentTabIndex
+                                };
+                                if (tabData.id === "Plugins" && root.selectedPluginSettingsId !== "") {
+                                    file = "PluginSettingsTab.qml";
+                                    key = file + ":" + root.selectedPluginSettingsId;
+                                    props.pluginId = root.selectedPluginSettingsId;
                                 }
+                                if (loadedKey === key && status !== Loader.Null) return;
+                                loadedKey = key;
+                                setSource(file, props);
                             }
 
                             Component.onCompleted: {
@@ -1652,6 +1804,12 @@ Item {
                                 target: root
                                 function onCurrentTabChanged() {
                                     if (root.currentTab === tabContentWrapper.parentTabIndex && !tabContentWrapper.hasSubtabs) singleTabLoader.ensureLoaded();
+                                }
+                                function onSelectedPluginSettingsIdChanged() {
+                                    if (tabContentWrapper.tabData.id === "Plugins"
+                                            && root.currentTab === tabContentWrapper.parentTabIndex) {
+                                        singleTabLoader.ensureLoaded();
+                                    }
                                 }
                             }
                         }

@@ -16,12 +16,16 @@ Item {
     readonly property string builtinPluginDir: Caching.qsDir + "/plugins/builtin"
     readonly property string userPluginDir: {
         const xdgConfig = Quickshell.env("XDG_CONFIG_HOME");
-        return (xdgConfig !== "" ? xdgConfig : Caching.home + "/.config") + "/serpantinum/plugins";
+        const configRoot = typeof xdgConfig === "string" && xdgConfig.trim() !== ""
+            ? xdgConfig
+            : Caching.home + "/.config";
+        return configRoot + "/serpantinum/plugins";
     }
 
     property var plugins: []
     property int configRevision: 0
     readonly property var barPlugins: plugins.filter(p => root.supportsBar(p))
+    readonly property var settingsPlugins: plugins.filter(p => root.supportsSettings(p))
     readonly property var barModules: { const revision = root.configRevision; return root.buildBarModules(plugins); }
     property var instances: ({})
     property bool scanning: false
@@ -64,6 +68,9 @@ Item {
             "            bar_entry = str(data.get('barEntry') or '').strip()",
             "            if bar_entry and not (manifest_path.parent / bar_entry).is_file():",
             "                raise ValueError(f'bar entry not found: {bar_entry}')",
+            "            settings_entry = str(data.get('settingsEntry') or '').strip()",
+            "            if settings_entry and not (manifest_path.parent / settings_entry).is_file():",
+            "                raise ValueError(f'settings entry not found: {settings_entry}')",
             "            bar_entries = data.get('barEntries') or []",
             "            if bar_entries and not isinstance(bar_entries, list):",
             "                raise ValueError('barEntries must be an array')",
@@ -85,6 +92,8 @@ Item {
             "            data['entry'] = entry",
             "            if bar_entry:",
             "                data['barEntry'] = bar_entry",
+            "            if settings_entry:",
+            "                data['settingsEntry'] = settings_entry",
             "            data['_dir'] = str(manifest_path.parent.resolve())",
             "            data['_manifest'] = str(manifest_path.resolve())",
             "            data['_source'] = source",
@@ -142,6 +151,9 @@ Item {
             "        bar_entry = str(data.get('barEntry') or '').strip()",
             "        if bar_entry and not (plugin_dir / bar_entry).is_file():",
             "            raise ValueError(f'{plugin_id}: bar entry not found: {bar_entry}')",
+            "        settings_entry = str(data.get('settingsEntry') or '').strip()",
+            "        if settings_entry and not (plugin_dir / settings_entry).is_file():",
+            "            raise ValueError(f'{plugin_id}: settings entry not found: {settings_entry}')",
             "        bar_entries = data.get('barEntries') or []",
             "        if bar_entries and not isinstance(bar_entries, list):",
             "            raise ValueError(f'{plugin_id}: barEntries must be an array')",
@@ -239,6 +251,10 @@ Item {
             || (Array.isArray(plugin.barEntries) && plugin.barEntries.length > 0)));
     }
 
+    function supportsSettings(plugin) {
+        return !!(plugin && typeof plugin.settingsEntry === "string" && plugin.settingsEntry.trim() !== "");
+    }
+
     function buildBarModules(pluginList) {
         const out = [];
         if (!Array.isArray(pluginList)) return out;
@@ -310,6 +326,11 @@ Item {
         return path ? encodeURI("file://" + plugin._dir + "/" + path) : "";
     }
 
+    function settingsEntryUrl(plugin) {
+        if (!supportsSettings(plugin) || !plugin._dir) return "";
+        return encodeURI("file://" + plugin._dir + "/" + plugin.settingsEntry);
+    }
+
     function arrayContainsModule(arr, moduleId) {
         if (!Array.isArray(arr)) return false;
         for (let i = 0; i < arr.length; ++i) {
@@ -357,11 +378,11 @@ Item {
         return moduleIsPlaced(barModuleId(plugin));
     }
 
-    function setTopbarEnabled(pluginId, enabled) {
-        const plugin = pluginById(pluginId);
+    function setBarModuleEnabled(moduleId, enabled, preferredSection) {
+        if (!isBarModuleId(moduleId)) return;
+        const plugin = pluginForBarModule(moduleId);
         if (!plugin || !supportsBar(plugin)) return;
 
-        const moduleId = barModuleId(plugin);
         let bar = Config.getSetting("bar", {});
         if (!bar || typeof bar !== "object" || Array.isArray(bar)) bar = {};
         let modules = bar.modules;
@@ -378,7 +399,9 @@ Item {
             if (!arrayContainsModule(modules.left, moduleId)
                     && !arrayContainsModule(modules.center, moduleId)
                     && !arrayContainsModule(modules.right, moduleId)) {
-                modules.center.push(moduleId);
+                const section = preferredSection === "left" || preferredSection === "right"
+                    ? preferredSection : "center";
+                modules[section].push(moduleId);
             }
         } else {
             modules.left = removeModuleFromArray(modules.left, moduleId);
@@ -388,6 +411,13 @@ Item {
 
         bar.modules = modules;
         Config.setSetting("bar", bar);
+    }
+
+    function setTopbarEnabled(pluginId, enabled) {
+        const plugin = pluginById(pluginId);
+        if (!plugin || !supportsBar(plugin)) return;
+
+        setBarModuleEnabled(barModuleId(plugin), enabled, "center");
         updatePluginSetting(pluginId, "topbar", !!enabled);
         updatePluginSetting(pluginId, "barPlacementMigrated", true);
     }
