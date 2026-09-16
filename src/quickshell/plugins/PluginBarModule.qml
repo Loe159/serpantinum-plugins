@@ -7,6 +7,7 @@ Rectangle {
 
     property string moduleId: ""
     property var pluginData: null
+    property var barEntryData: null
     property var barWindow: null
     property bool vertical: false
     property bool isSolid: false
@@ -113,11 +114,11 @@ Rectangle {
         anchors.centerIn: parent
         asynchronous: false
         active: root.pluginData !== null && root.moduleActive && PluginManager.isEnabled(root.pluginData)
-        source: active ? PluginManager.barEntryUrl(root.pluginData) : ""
+        source: active ? PluginManager.barEntryUrl(root.pluginData, root.barEntryData) : ""
 
         onLoaded: {
             if (!item) return;
-            try { item.host = root; } catch (e) {
+            try { item.host = root; if (item.providerId !== undefined && root.barEntryData) item.providerId = root.barEntryData.provider || root.barEntryData.id || ""; } catch (e) {
                 PluginManager.reportFailed(root.pluginData.id, "barEntry root must expose a 'host' property: " + e);
             }
         }

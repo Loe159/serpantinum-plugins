@@ -59,7 +59,7 @@ TopBarBase {
 
     Repeater {
         id: pluginModules
-        model: PluginManager.barPlugins
+        model: PluginManager.barModules
 
         onItemAdded: function(index, item) { root.pluginRevision++; }
         onItemRemoved: function(index, item) { root.pluginRevision++; }
@@ -68,8 +68,9 @@ TopBarBase {
             id: pluginBar
             required property var modelData
 
-            pluginData: modelData
-            moduleId: PluginManager.barModuleId(modelData)
+            pluginData: modelData.plugin
+            barEntryData: modelData.entry
+            moduleId: modelData.moduleId
             barWindow: root.barWindow
             vertical: false
             isSolid: root.isSolid || root.isFill

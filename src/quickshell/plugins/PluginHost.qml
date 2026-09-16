@@ -48,6 +48,15 @@ Item {
                 try {
                     item.pluginMetadata = pluginData;
                     item.pluginDirectory = pluginData._dir;
+                    if (item.hostServices !== undefined) {
+                        item.hostServices = {
+                            config: Config,
+                            pluginManager: PluginManager,
+                            theme: ThemeBackend,
+                            scaler: Scaler,
+                            caching: Caching
+                        };
+                    }
                 } catch (e) {
                     PluginManager.reportFailed(
                         pluginData.id,

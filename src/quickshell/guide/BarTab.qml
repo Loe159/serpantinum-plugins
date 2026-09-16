@@ -24,10 +24,11 @@ BarTabBase {
     function getModuleInfo(id) {
         if (PluginManager.isBarModuleId(id)) {
             const plugin = PluginManager.pluginForBarModule(id);
+            const entry = PluginManager.barEntryForModule(id);
             return {
                 "moduleId": id,
-                "moduleLabel": plugin ? (plugin.barLabel || plugin.name || plugin.id) : id,
-                "moduleIcon": plugin ? (plugin.barIcon || plugin.icon || "󰏗") : "󰏗",
+                "moduleLabel": entry ? (entry.label || entry.name || entry.id) : (plugin ? (plugin.barLabel || plugin.name || plugin.id) : id),
+                "moduleIcon": entry ? (entry.icon || (plugin ? plugin.icon : "󰏗")) : (plugin ? (plugin.barIcon || plugin.icon || "󰏗") : "󰏗"),
                 "moduleColor": colorToString(pluginAccent(plugin)),
                 "isPlaceholder": false,
                 "placeholderWidth": 0,
@@ -126,12 +127,10 @@ BarTabBase {
             }
         }
 
-        const plugins = PluginManager.barPlugins;
-        for (let i = 0; i < plugins.length; ++i) {
-            const moduleId = PluginManager.barModuleId(plugins[i]);
-            if (!moduleExistsInEditor(moduleId)) {
-                available.append(getModuleInfo(moduleId));
-            }
+        const modules = PluginManager.barModules;
+        for (let i = 0; i < modules.length; ++i) {
+            const moduleId = modules[i].moduleId;
+            if (!moduleExistsInEditor(moduleId)) available.append(getModuleInfo(moduleId));
         }
     }
 

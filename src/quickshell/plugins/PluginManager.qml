@@ -20,7 +20,9 @@ Item {
     }
 
     property var plugins: []
+    property int configRevision: 0
     readonly property var barPlugins: plugins.filter(p => root.supportsBar(p))
+    readonly property var barModules: { const revision = root.configRevision; return root.buildBarModules(plugins); }
     property var instances: ({})
     property bool scanning: false
     property string lastError: ""
@@ -62,6 +64,22 @@ Item {
             "            bar_entry = str(data.get('barEntry') or '').strip()",
             "            if bar_entry and not (manifest_path.parent / bar_entry).is_file():",
             "                raise ValueError(f'bar entry not found: {bar_entry}')",
+            "            bar_entries = data.get('barEntries') or []",
+            "            if bar_entries and not isinstance(bar_entries, list):",
+            "                raise ValueError('barEntries must be an array')",
+            "            seen_bar_ids = set()",
+            "            for item in bar_entries:",
+            "                if not isinstance(item, dict):",
+            "                    raise ValueError('barEntries items must be objects')",
+            "                item_id = str(item.get('id') or '').strip()",
+            "                item_entry = str(item.get('entry') or '').strip()",
+            "                if not item_id or not item_entry:",
+            "                    raise ValueError('barEntries items require id and entry')",
+            "                if item_id in seen_bar_ids:",
+            "                    raise ValueError(f'duplicate bar entry id: {item_id}')",
+            "                seen_bar_ids.add(item_id)",
+            "                if not (manifest_path.parent / item_entry).is_file():",
+            "                    raise ValueError(f'bar entry not found: {item_entry}')",
             "            data['id'] = plugin_id",
             "            data['apiVersion'] = api",
             "            data['entry'] = entry",
@@ -124,6 +142,22 @@ Item {
             "        bar_entry = str(data.get('barEntry') or '').strip()",
             "        if bar_entry and not (plugin_dir / bar_entry).is_file():",
             "            raise ValueError(f'{plugin_id}: bar entry not found: {bar_entry}')",
+            "        bar_entries = data.get('barEntries') or []",
+            "        if bar_entries and not isinstance(bar_entries, list):",
+            "            raise ValueError(f'{plugin_id}: barEntries must be an array')",
+            "        seen_bar_ids = set()",
+            "        for item in bar_entries:",
+            "            if not isinstance(item, dict):",
+            "                raise ValueError(f'{plugin_id}: barEntries items must be objects')",
+            "            item_id = str(item.get('id') or '').strip()",
+            "            item_entry = str(item.get('entry') or '').strip()",
+            "            if not item_id or not item_entry:",
+            "                raise ValueError(f'{plugin_id}: barEntries items require id and entry')",
+            "            if item_id in seen_bar_ids:",
+            "                raise ValueError(f'{plugin_id}: duplicate bar entry id: {item_id}')",
+            "            seen_bar_ids.add(item_id)",
+            "            if not (plugin_dir / item_entry).is_file():",
+            "                raise ValueError(f'{plugin_id}: bar entry not found: {item_entry}')",
             "        dirname = re.sub(r'[^A-Za-z0-9._-]+', '-', plugin_id).strip('-') or 'plugin'",
             "        dest = root / dirname",
             "        if dest in destinations:",
@@ -201,11 +235,38 @@ Item {
     }
 
     function supportsBar(plugin) {
-        return !!(plugin && typeof plugin.barEntry === "string" && plugin.barEntry.trim() !== "");
+        return !!(plugin && ((typeof plugin.barEntry === "string" && plugin.barEntry.trim() !== "")
+            || (Array.isArray(plugin.barEntries) && plugin.barEntries.length > 0)));
+    }
+
+    function buildBarModules(pluginList) {
+        const out = [];
+        if (!Array.isArray(pluginList)) return out;
+        for (let i = 0; i < pluginList.length; ++i) {
+            const plugin = pluginList[i];
+            if (!supportsBar(plugin)) continue;
+            if (Array.isArray(plugin.barEntries) && plugin.barEntries.length > 0) {
+                for (let j = 0; j < plugin.barEntries.length; ++j) {
+                    const entry = plugin.barEntries[j];
+                    if (!entry || !entry.id || !entry.entry) continue;
+                    if (entry.enabledSetting) {
+                        const perPlugin = pluginSettings(plugin.id);
+                        const enabled = perPlugin[entry.enabledSetting] !== undefined
+                            ? !!perPlugin[entry.enabledSetting]
+                            : entry.enabledByDefault !== false;
+                        if (!enabled) continue;
+                    }
+                    out.push({ plugin: plugin, entry: entry, moduleId: barModulePrefix + plugin.id + ":" + entry.id });
+                }
+            } else {
+                out.push({ plugin: plugin, entry: null, moduleId: barModulePrefix + plugin.id });
+            }
+        }
+        return out;
     }
 
     function supportsTopbar(plugin) {
-        return supportsBar(plugin);
+        return !!(plugin && typeof plugin.barEntry === "string" && plugin.barEntry.trim() !== "");
     }
 
     function barModuleId(pluginOrId) {
@@ -219,7 +280,23 @@ Item {
 
     function pluginForBarModule(moduleId) {
         if (!isBarModuleId(moduleId)) return null;
-        return pluginById(moduleId.substring(barModulePrefix.length));
+        const raw = moduleId.substring(barModulePrefix.length);
+        const separator = raw.indexOf(":");
+        return pluginById(separator === -1 ? raw : raw.substring(0, separator));
+    }
+
+    function barEntryForModule(moduleId) {
+        if (!isBarModuleId(moduleId)) return null;
+        const raw = moduleId.substring(barModulePrefix.length);
+        const separator = raw.indexOf(":");
+        if (separator === -1) return null;
+        const plugin = pluginById(raw.substring(0, separator));
+        if (!plugin || !Array.isArray(plugin.barEntries)) return null;
+        const entryId = raw.substring(separator + 1);
+        for (let i = 0; i < plugin.barEntries.length; ++i) {
+            if (plugin.barEntries[i] && plugin.barEntries[i].id === entryId) return plugin.barEntries[i];
+        }
+        return null;
     }
 
     function entryUrl(plugin) {
@@ -227,9 +304,10 @@ Item {
         return encodeURI("file://" + plugin._dir + "/" + plugin.entry);
     }
 
-    function barEntryUrl(plugin) {
+    function barEntryUrl(plugin, entry) {
         if (!supportsBar(plugin) || !plugin._dir) return "";
-        return encodeURI("file://" + plugin._dir + "/" + plugin.barEntry);
+        const path = entry && entry.entry ? entry.entry : plugin.barEntry;
+        return path ? encodeURI("file://" + plugin._dir + "/" + path) : "";
     }
 
     function arrayContainsModule(arr, moduleId) {
@@ -443,6 +521,12 @@ Item {
             }
         }
         onExited: root.installing = false
+    }
+
+    Connections {
+        target: Config
+        function onSettingsLoaded() { root.configRevision++; }
+        function onRawSettingsChanged() { root.configRevision++; }
     }
 
     Component.onCompleted: Qt.callLater(root.refresh)
