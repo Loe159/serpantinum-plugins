@@ -14,6 +14,7 @@ Item {
     readonly property int apiVersion: 1
     readonly property string barModulePrefix: "plugin:"
     readonly property string builtinPluginDir: Caching.qsDir + "/plugins/builtin"
+    readonly property string reusablesDir: Caching.qsDir + "/reusables"
     readonly property string userPluginDir: {
         const xdgConfig = Quickshell.env("XDG_CONFIG_HOME");
         const configRoot = typeof xdgConfig === "string" && xdgConfig.trim() !== ""
@@ -246,9 +247,14 @@ Item {
         updatePluginSetting(pluginId, "enabled", !!enabled);
     }
 
+    function hasListItems(value) {
+        return value !== null && value !== undefined
+            && typeof value.length === "number" && value.length > 0;
+    }
+
     function supportsBar(plugin) {
         return !!(plugin && ((typeof plugin.barEntry === "string" && plugin.barEntry.trim() !== "")
-            || (Array.isArray(plugin.barEntries) && plugin.barEntries.length > 0)));
+            || hasListItems(plugin.barEntries)));
     }
 
     function supportsSettings(plugin) {
@@ -261,7 +267,7 @@ Item {
         for (let i = 0; i < pluginList.length; ++i) {
             const plugin = pluginList[i];
             if (!supportsBar(plugin)) continue;
-            if (Array.isArray(plugin.barEntries) && plugin.barEntries.length > 0) {
+            if (hasListItems(plugin.barEntries)) {
                 for (let j = 0; j < plugin.barEntries.length; ++j) {
                     const entry = plugin.barEntries[j];
                     if (!entry || !entry.id || !entry.entry) continue;
@@ -307,7 +313,7 @@ Item {
         const separator = raw.indexOf(":");
         if (separator === -1) return null;
         const plugin = pluginById(raw.substring(0, separator));
-        if (!plugin || !Array.isArray(plugin.barEntries)) return null;
+        if (!plugin || !hasListItems(plugin.barEntries)) return null;
         const entryId = raw.substring(separator + 1);
         for (let i = 0; i < plugin.barEntries.length; ++i) {
             if (plugin.barEntries[i] && plugin.barEntries[i].id === entryId) return plugin.barEntries[i];
@@ -329,6 +335,12 @@ Item {
     function settingsEntryUrl(plugin) {
         if (!supportsSettings(plugin) || !plugin._dir) return "";
         return encodeURI("file://" + plugin._dir + "/" + plugin.settingsEntry);
+    }
+
+    function reusableUrl(fileName) {
+        const safeName = String(fileName || "");
+        if (safeName === "" || safeName.indexOf("/") !== -1 || safeName.indexOf("\\") !== -1) return "";
+        return encodeURI("file://" + reusablesDir + "/" + safeName);
     }
 
     function arrayContainsModule(arr, moduleId) {
