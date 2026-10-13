@@ -58,6 +58,19 @@ Item {
         return s;
     }
 
+    // Plugin names are user-provided labels, not translation keys.
+    // For regular Guide tabs, fall back to the declared name when i18n has no entry.
+    function tabTitle(tabData) {
+        if (!tabData) return "";
+        if (tabData.translateTitle === false) return tabData.name || tabData.id || "";
+
+        let key = "guide.tabs." + String(tabData.key || tabData.id).toLowerCase();
+        let translated = I18n.t(key);
+        return translated && translated !== key
+            ? translated
+            : (tabData.name || tabData.id || key);
+    }
+
     function resolveTabTitle(tabKey) {
         if (!tabKey) return "";
         let s = String(tabKey).trim();
@@ -67,7 +80,7 @@ Item {
             if ((t.key && t.key.toLowerCase() === cleanKey) ||
                 (t.id && t.id.toLowerCase() === cleanKey) ||
                 (t.name && t.name.toLowerCase() === cleanKey)) {
-                return I18n.t("guide.tabs." + (t.key || t.id).toLowerCase(), t.name || t.id);
+                return tabTitle(t);
             }
         }
         return resolveI18nText(s);
@@ -91,7 +104,7 @@ Item {
                         (x.name && x.name.toLowerCase() === cleanSub)
                     );
                     if (st) {
-                        return I18n.t("guide.tabs." + (st.key || st.id).toLowerCase(), st.name || st.id);
+                        return tabTitle(st);
                     }
                 }
             }
@@ -578,7 +591,7 @@ Item {
             subtabs: [{ id: "PluginsOverview", key: "plugins_overview", name: "Overview", icon: "󰏗", file: "PluginsTab.qml" }]
                 .concat(PluginManager.settingsPlugins.map(p => ({
                     id: "PluginSettings-" + p.id, key: "plugin-" + p.id,
-                    name: p.name || p.id, icon: p.icon || "󰏗",
+                    name: p.name || p.id, icon: p.icon || "󰏗", translateTitle: false,
                     file: "PluginSettingsTab.qml", pluginId: p.id
                 })))
         },

@@ -42,7 +42,9 @@
       "dock": "Dock",
       "bar_general": "Général",
       "bar_modules": "Modules",
-      "bar_side_modules": "Modules latéraux"
+      "bar_side_modules": "Modules latéraux",
+      "plugins": "Plugins",
+      "plugins_overview": "Vue d'ensemble"
     },
     "launcher": {
       "position": {

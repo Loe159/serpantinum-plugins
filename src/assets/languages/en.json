@@ -43,7 +43,8 @@
       "bar_general": "General",
       "bar_modules": "Modules",
       "bar_side_modules": "Side modules",
-      "plugins": "Plugins"
+      "plugins": "Plugins",
+      "plugins_overview": "Overview"
     },
     "launcher": {
       "position": {
