@@ -19,6 +19,7 @@ Scope {
 
     property string freezeTimestamp: ""
     property bool isUnlocking: false
+    property int resumeRevision: 0
 
     property bool isNiri: false
     property bool isSway: false
@@ -53,6 +54,11 @@ Scope {
         SystemInfo.fetch();
         root.updateDeInfo();
         root.updateScreenCount();
+        Quickshell.execDetached(["rm", "-f", Caching.getRunDir("lock") + "/locked"]);
+    }
+
+    Component.onDestruction: {
+        Quickshell.execDetached(["rm", "-f", Caching.getRunDir("lock") + "/locked"]);
     }
 
     Connections {
@@ -207,6 +213,7 @@ Scope {
         root.isUnlocking = false;
         kbWaiter.running = false;
         kbPoller.running = false;
+        Quickshell.execDetached(["rm", "-f", Caching.getRunDir("lock") + "/locked"]);
         if (root.freezeTimestamp !== "") {
             Quickshell.execDetached(["bash", "-c", "rm -f " + Caching.getRunDir("screenshot") + "/lock_freeze_*_" + root.freezeTimestamp + ".png"]);
             root.freezeTimestamp = "";
@@ -220,12 +227,6 @@ Scope {
         }
     }
 
-    Settings {
-        id: lockSettings
-        category: "LockScreen"
-        property bool hidePassword: false
-        property int revealDuration: 300
-    }
 
     QtObject {
         id: lockUI
@@ -267,6 +268,7 @@ Scope {
             root.updateDeInfo();
             pamActionTimer.restart();
             kbPollerRestartTimer.restart();
+            root.resumeRevision++;
             if (rootLock.locked) {
                 pam.start();
             }
@@ -286,6 +288,14 @@ Scope {
     WlSessionLock {
         id: rootLock
         locked: false
+        onLockedChanged: {
+            let lockFile = Caching.getRunDir("lock") + "/locked";
+            if (locked) {
+                Quickshell.execDetached(["touch", lockFile]);
+            } else {
+                Quickshell.execDetached(["rm", "-f", lockFile]);
+            }
+        }
 
         surface: Component {
             WlSessionLockSurface {
@@ -512,6 +522,30 @@ Scope {
                                     }
                                     event.accepted = true;
                                 }
+                            } else {
+                                screenRoot.restoreFocus();
+                                if (event.key === Qt.Key_Escape) {
+                                    if (screenRoot.powerMenuOpen) {
+                                        screenRoot.powerMenuOpen = false;
+                                    } else {
+                                        screenRoot.inputActive = false;
+                                    }
+                                    passwordInput.clear();
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    if (passwordInput.text.length > 0 && pam.responseRequired && !lockUI.authenticating) {
+                                        lockUI.authenticating = true;
+                                        lockUI.statusText = I18n.t("lock.status.authenticating");
+                                        lockUI.failed = false;
+                                        pam.respond(passwordInput.text);
+                                    }
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                                    event.accepted = true;
+                                } else if (event.text.length > 0 && event.key !== Qt.Key_Backspace) {
+                                    passwordInput.insertText(event.text);
+                                    event.accepted = true;
+                                }
                             }
                         }
                     }
@@ -677,10 +711,6 @@ Scope {
                         updateCavaConsumer();
                     }
 
-                    property real globalWavePhase: 0.0
-                    NumberAnimation on globalWavePhase {
-                        from: 0; to: Math.PI * 2; duration: 1800; loops: Animation.Infinite; running: screenRoot.wingsReveal > 0.98
-                    }
 
                     property real rawCpu: isNaN(SysData.cpu) ? 0.0 : SysData.cpu / 100.0
                     property real cpuUsage: rawCpu
@@ -699,11 +729,13 @@ Scope {
                     Behavior on ramUsedGb { enabled: screenRoot.wingsReveal > 0.98; NumberAnimation { duration: 800; easing.type: Easing.OutQuint } }
 
                     property real netRx: isNaN(SysData.netRx) ? 0 : SysData.netRx
+                    Behavior on netRx { enabled: screenRoot.wingsReveal > 0.98; NumberAnimation { duration: 1200; easing.type: Easing.OutCubic } }
                     property real netTx: isNaN(SysData.netTx) ? 0 : SysData.netTx
+                    Behavior on netTx { enabled: screenRoot.wingsReveal > 0.98; NumberAnimation { duration: 1200; easing.type: Easing.OutCubic } }
                     function formatBytes(bytes) {
-                        if (bytes <= 0 || isNaN(bytes)) return "0 B/s";
+                        if (!(bytes >= 1)) return "0 B/s";
                         let k = 1024, sizes = ["B/s", "KB/s", "MB/s", "GB/s"];
-                        let i = Math.floor(Math.log(bytes) / Math.log(k));
+                        let i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
                         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
                     }
                     property string rxSpeedStr: formatBytes(netRx)
@@ -716,10 +748,25 @@ Scope {
                     property string diskUsedText: SysData.diskGb > 0 ? (SysData.diskGb.toFixed(1) + "G") : "..."
                     property string diskTotalText: SysData.diskTotalGb > 0 ? (SysData.diskTotalGb.toFixed(1) + "G") : ""
 
+                    Timer {
+                        id: introStartDelayTimer
+                        interval: 100
+                        repeat: false
+                        onTriggered: {
+                            if (screenRoot.isPlayingIntro && !introSequence.running) {
+                                introSequence.start();
+                            }
+                        }
+                    }
+
                     Component.onCompleted: {
-                        introSequence.start();
                         screenRoot.updateForecastData();
                         screenRoot.restoreFocus();
+                        if (freezeWallpaperView.status === Image.Ready) {
+                            introSequence.start();
+                        } else {
+                            introStartDelayTimer.start();
+                        }
                     }
 
                     Component.onDestruction: {
@@ -737,20 +784,29 @@ Scope {
                         target: rootLock
                         function onLockedChanged() {
                             if (rootLock.locked) {
-                                focusSyncTimer.restart();
                                 screenRoot.restoreFocus();
                             }
                         }
                     }
 
-                    Timer {
-                        id: focusSyncTimer
-                        interval: 50
-                        repeat: true
-                        running: rootLock.locked && !screenRoot.isUnlocking
-                        triggeredOnStart: true
-                        onTriggered: {
-                            screenRoot.restoreFocus();
+                    Connections {
+                        target: surface
+                        function onVisibleChanged() {
+                            if (surface.visible && rootLock.locked && !screenRoot.isUnlocking) {
+                                screenRoot.restoreFocus();
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: root
+                        function onResumeRevisionChanged() {
+                            if (rootLock.locked && !screenRoot.isUnlocking) {
+                                screenRoot.restoreFocus();
+                                if (typeof clockModule !== "undefined") {
+                                    clockModule.currentTime = (typeof DateTime !== "undefined" && DateTime.now) ? DateTime.now : new Date();
+                                }
+                            }
                         }
                     }
 
@@ -780,8 +836,9 @@ Scope {
                             anchors.fill: parent
                             source: screenRoot.wallpaperSource
                             fillMode: Image.PreserveAspectCrop
-                            asynchronous: false
-                            cache: false
+                            asynchronous: true
+                            cache: true
+                            sourceSize: Qt.size(Math.ceil(parent.width * (Screen.devicePixelRatio || 1)), Math.ceil(parent.height * (Screen.devicePixelRatio || 1)))
                             onStatusChanged: {
                                 if (status === Image.Error) {
                                     let defaultPath = "file://" + Caching.getCacheDir("wallpaper") + "/current_wallpaper.png";
@@ -798,11 +855,15 @@ Scope {
                             source: (screenRoot.currentFreezePath !== "" && root.freezeTimestamp !== "") ? ("file://" + screenRoot.currentFreezePath) : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: false
-                            cache: false
+                            cache: true
+                            sourceSize: Qt.size(Math.ceil(parent.width * (Screen.devicePixelRatio || 1)), Math.ceil(parent.height * (Screen.devicePixelRatio || 1)))
                             opacity: (status === Image.Ready && source.toString() !== "") ? 1.0 : 0.0
 
                             onStatusChanged: {
-                                if (status === Image.Error && root.freezeTimestamp !== "") {
+                                if (status === Image.Ready && screenRoot.isPlayingIntro && !introSequence.running) {
+                                    introStartDelayTimer.stop();
+                                    introSequence.start();
+                                } else if (status === Image.Error && root.freezeTimestamp !== "") {
                                     let defaultFreeze = "file://" + Caching.getRunDir("screenshot") + "/lock_freeze_default_" + root.freezeTimestamp + ".png";
                                     if (source.toString() !== defaultFreeze) {
                                         source = defaultFreeze;
@@ -823,7 +884,8 @@ Scope {
                             source: screenRoot.wallpaperSource
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
-                            cache: false
+                            cache: true
+                            sourceSize: Qt.size(Math.ceil(parent.width * (Screen.devicePixelRatio || 1)), Math.ceil(parent.height * (Screen.devicePixelRatio || 1)))
 
                             onStatusChanged: {
                                 if (status === Image.Error) {
@@ -841,7 +903,8 @@ Scope {
                             source: (screenRoot.currentFreezePath !== "" && root.freezeTimestamp !== "") ? ("file://" + screenRoot.currentFreezePath) : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: false
-                            cache: false
+                            cache: true
+                            sourceSize: Qt.size(Math.ceil(parent.width * (Screen.devicePixelRatio || 1)), Math.ceil(parent.height * (Screen.devicePixelRatio || 1)))
                             opacity: (screenRoot.inputActive && status === Image.Ready && source.toString() !== "") ? 1.0 : 0.0
 
                             Behavior on opacity {
@@ -867,13 +930,16 @@ Scope {
                         z: 1
                         autoPaddingEnabled: false
                         blurEnabled: true
-                        blurMax: screenRoot.s(48)
-                        blur: screenRoot.inputActive ? 1.0 : 0.55
+                        blurMax: screenRoot.s(64)
+                        saturation: 0.25
+                        contrast: 0.06
+                        brightness: 0.02
+                        blur: screenRoot.inputActive ? 1.0 : 0.72
                         Behavior on blur {
                             enabled: !screenRoot.isPlayingIntro && !screenRoot.isUnlocking
                             NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
                         }
-                        opacity: screenRoot.contentReveal
+                        opacity: screenRoot.panelReveal
                         visible: opacity > 0.01
                     }
 
@@ -882,101 +948,31 @@ Scope {
                         anchors.fill: parent
                         z: 2
                         color: ThemeBackend.crust
-                        opacity: (screenRoot.inputActive ? 0.72 : 0.32) * screenRoot.contentReveal
+                        opacity: (screenRoot.inputActive ? 0.14 : 0.38) * screenRoot.panelReveal
                         Behavior on opacity {
                             enabled: !screenRoot.isPlayingIntro && !screenRoot.isUnlocking
                             NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
                         }
                     }
 
-                    Canvas {
+                    ShaderEffect {
                         id: wipeCanvas
                         anchors.fill: parent
                         z: 10
-                        renderTarget: Canvas.FramebufferObject
-                        renderStrategy: Canvas.Immediate
-
-                        property real lastPaintedRev: -1
-                        property real cachedS28: screenRoot.s(28)
-
-                        readonly property var wipeColors: [
-                            ThemeBackend.crust.toString(),
-                            ThemeBackend.surface1.toString(),
-                            ThemeBackend.blue.toString(),
-                            ThemeBackend.mauve.toString(),
-                            ThemeBackend.surface0.toString()
-                        ]
-                        readonly property var wipeAmps: [1.5, 1.3, 1.1, 0.9, 0.6]
-                        readonly property var wipeOffsets: [0.0, 0.5, 1.0, 1.5, 2.0]
 
                         opacity: screenRoot.isPlayingIntro ? (screenRoot.panelReveal < 0.8 ? 1.0 : Math.max(0.0, (1.0 - screenRoot.panelReveal) / 0.2)) : 0.0
                         visible: opacity > 0.001
 
-                        Connections {
-                            target: screenRoot
-                            enabled: screenRoot.isPlayingIntro && wipeCanvas.visible
-                            function onPanelRevealChanged() {
-                                if (Math.abs(screenRoot.panelReveal - wipeCanvas.lastPaintedRev) >= 0.005) {
-                                    wipeCanvas.requestPaint();
-                                }
-                            }
-                        }
+                        property vector2d itemSize: Qt.vector2d(width, height)
+                        property real reveal: screenRoot.panelReveal
+                        property real s28: screenRoot.s(28)
+                        property color color0: ThemeBackend.crust
+                        property color color1: ThemeBackend.surface1
+                        property color color2: ThemeBackend.blue
+                        property color color3: ThemeBackend.mauve
+                        property color color4: ThemeBackend.surface0
 
-                        onPaint: {
-                            var rev = screenRoot.panelReveal;
-                            lastPaintedRev = rev;
-                            if (rev <= 0.0) return;
-
-                            var ctx = getContext("2d");
-                            var w = width;
-                            var h = height;
-
-                            var lastFull = -1;
-                            for (var k = 4; k >= 0; k--) {
-                                var p = (rev - (k === 0 ? 0.0 : k * 0.07)) * 1.55;
-                                if (p >= 1.0) {
-                                    lastFull = k;
-                                    break;
-                                }
-                            }
-
-                            if (lastFull >= 0) {
-                                ctx.fillStyle = wipeColors[lastFull];
-                                ctx.fillRect(0, 0, w, h);
-                            } else {
-                                ctx.clearRect(0, 0, w, h);
-                            }
-
-                            var start = lastFull + 1;
-                            if (start >= 5) return;
-
-                            var phase = rev * 7.853981633974483;
-                            var s28 = cachedS28;
-                            var cp1x = w * 0.38;
-                            var cp2x = w * 0.72;
-                            var pi = 3.141592653589793;
-
-                            for (var i = start; i < 5; i++) {
-                                var prog = (rev - (i === 0 ? 0.0 : i * 0.07)) * 1.55;
-                                if (prog <= 0.0) continue;
-
-                                var smoothProg = Math.pow(prog, 1.4);
-                                var currentY = h * smoothProg;
-                                var waveAmp = s28 * Math.sin(smoothProg * pi) * wipeAmps[i];
-
-                                var cp1y = currentY + Math.sin(phase + wipeOffsets[i]) * waveAmp;
-                                var cp2y = currentY + Math.cos(phase + wipeOffsets[i] + pi) * waveAmp;
-
-                                ctx.beginPath();
-                                ctx.moveTo(0, 0);
-                                ctx.lineTo(0, currentY);
-                                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w, currentY);
-                                ctx.lineTo(w, 0);
-                                ctx.closePath();
-                                ctx.fillStyle = wipeColors[i];
-                                ctx.fill();
-                            }
-                        }
+                        fragmentShader: "file://" + Caching.serpantinumDir + "/assets/shaders/effects/curtain_wipe.frag.qsb"
                     }
 
                     SequentialAnimation {
@@ -1021,7 +1017,6 @@ Scope {
 
                         MouseArea {
                             anchors.fill: parent
-                            hoverEnabled: true
                             preventStealing: true
                             enabled: !screenRoot.isPlayingIntro && !screenRoot.isUnlocking
                             onPressed: {
@@ -1051,6 +1046,16 @@ Scope {
                                 scale: (screenRoot.inputActive || screenRoot.centerReveal > 0.02) ? 0.92 : 1.0
                                 visible: opacity > 0.01
 
+                                property var currentTime: (typeof DateTime !== "undefined" && DateTime.now) ? DateTime.now : new Date()
+                                property string timeFormat: {
+                                    if (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.time && Config.rawSettings.bar.time.format !== undefined) {
+                                        return Config.rawSettings.bar.time.format;
+                                    }
+                                    return "HH:mm:ss";
+                                }
+                                readonly property bool is12h: timeFormat.includes("h") || timeFormat.toLowerCase().includes("ap")
+                                readonly property string hourFmt: is12h ? (timeFormat.includes("hh") ? "hh" : "h") : (timeFormat.includes("H") && !timeFormat.includes("HH") ? "H" : "HH")
+
                                 Behavior on anchors.verticalCenterOffset { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
                                 Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                 Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -1061,12 +1066,23 @@ Scope {
 
                                     Text {
                                         id: clockHours
+                                        text: Qt.formatDateTime(clockModule.currentTime, clockModule.hourFmt)
                                         font.family: ThemeBackend.fontFamily
                                         font.pixelSize: screenRoot.s(120)
                                         font.weight: Font.Normal
                                         color: "#ffffff"
-                                        style: Text.Raised
-                                        styleColor: Qt.rgba(0, 0, 0, 0.25)
+
+                                        Text {
+                                            anchors.fill: parent
+                                            anchors.topMargin: screenRoot.s(1.5)
+                                            anchors.bottomMargin: -screenRoot.s(1.5)
+                                            font.family: parent.font.family
+                                            font.pixelSize: parent.font.pixelSize
+                                            font.weight: parent.font.weight
+                                            color: Qt.rgba(0, 0, 0, 0.16)
+                                            text: parent.text
+                                            z: -1
+                                        }
                                     }
 
                                     Text {
@@ -1076,33 +1092,46 @@ Scope {
                                         font.pixelSize: screenRoot.s(80)
                                         font.weight: Font.Light
                                         Layout.alignment: Qt.AlignVCenter
-                                        opacity: colonPulse.running ? colonOpacity : 0.6
+                                        opacity: 0.75
                                         color: "#ffffff"
-                                        style: Text.Raised
-                                        styleColor: Qt.rgba(0, 0, 0, 0.25)
 
-                                        property real colonOpacity: 0.6
-                                        SequentialAnimation on colonOpacity {
-                                            id: colonPulse
-                                            running: !screenRoot.isPlayingIntro && !screenRoot.isUnlocking
-                                            loops: Animation.Infinite
-                                            NumberAnimation { to: 1.0; duration: 500; easing.type: Easing.OutCubic }
-                                            NumberAnimation { to: 0.35; duration: 500; easing.type: Easing.InCubic }
+                                        Text {
+                                            anchors.fill: parent
+                                            anchors.topMargin: screenRoot.s(1.5)
+                                            anchors.bottomMargin: -screenRoot.s(1.5)
+                                            font.family: parent.font.family
+                                            font.pixelSize: parent.font.pixelSize
+                                            font.weight: parent.font.weight
+                                            color: Qt.rgba(0, 0, 0, 0.16)
+                                            text: parent.text
+                                            z: -1
                                         }
                                     }
 
                                     Text {
                                         id: clockMinutes
+                                        text: Qt.formatDateTime(clockModule.currentTime, "mm")
                                         font.family: ThemeBackend.fontFamily
                                         font.pixelSize: screenRoot.s(120)
                                         font.weight: Font.Normal
                                         color: "#ffffff"
-                                        style: Text.Raised
-                                        styleColor: Qt.rgba(0, 0, 0, 0.25)
+
+                                        Text {
+                                            anchors.fill: parent
+                                            anchors.topMargin: screenRoot.s(1.5)
+                                            anchors.bottomMargin: -screenRoot.s(1.5)
+                                            font.family: parent.font.family
+                                            font.pixelSize: parent.font.pixelSize
+                                            font.weight: parent.font.weight
+                                            color: Qt.rgba(0, 0, 0, 0.16)
+                                            text: parent.text
+                                            z: -1
+                                        }
                                     }
 
                                     Text {
                                         id: clockAmPm
+                                        text: clockModule.is12h ? Qt.formatDateTime(clockModule.currentTime, "AP") : ""
                                         visible: text !== ""
                                         font.family: ThemeBackend.fontFamily
                                         font.pixelSize: screenRoot.s(28)
@@ -1111,13 +1140,24 @@ Scope {
                                         opacity: 0.8
                                         Layout.alignment: Qt.AlignBottom
                                         Layout.bottomMargin: screenRoot.s(24)
-                                        style: Text.Raised
-                                        styleColor: Qt.rgba(0, 0, 0, 0.25)
+
+                                        Text {
+                                            anchors.fill: parent
+                                            anchors.topMargin: screenRoot.s(1.5)
+                                            anchors.bottomMargin: -screenRoot.s(1.5)
+                                            font.family: parent.font.family
+                                            font.pixelSize: parent.font.pixelSize
+                                            font.weight: parent.font.weight
+                                            color: Qt.rgba(0, 0, 0, 0.16)
+                                            text: parent.text
+                                            z: -1
+                                        }
                                     }
                                 }
 
                                 Text {
                                     id: dateText
+                                    text: Qt.formatDateTime(clockModule.currentTime, "dddd, d MMMM").toUpperCase()
                                     Layout.alignment: Qt.AlignHCenter
                                     font.family: ThemeBackend.fontFamily
                                     font.pixelSize: screenRoot.s(14)
@@ -1125,21 +1165,44 @@ Scope {
                                     font.letterSpacing: 1.4
                                     color: "#ffffff"
                                     opacity: 0.85
+
+                                    Text {
+                                        anchors.fill: parent
+                                        anchors.topMargin: screenRoot.s(1.5)
+                                        anchors.bottomMargin: -screenRoot.s(1.5)
+                                        font.family: parent.font.family
+                                        font.pixelSize: parent.font.pixelSize
+                                        font.weight: parent.font.weight
+                                        font.letterSpacing: parent.font.letterSpacing
+                                        color: Qt.rgba(0, 0, 0, 0.16)
+                                        text: parent.text
+                                        z: -1
+                                    }
                                 }
 
-                                Timer {
-                                    id: clockTimer
-                                    interval: 1000; running: true; repeat: true; triggeredOnStart: true
-                                    onTriggered: {
-                                        let d = new Date();
-                                        let fmt = (typeof Config !== "undefined" && Config.rawSettings && Config.rawSettings.bar && Config.rawSettings.bar.time && Config.rawSettings.bar.time.format !== undefined) ? Config.rawSettings.bar.time.format : "HH:mm:ss";
-                                        let is12h = fmt.includes("h") || fmt.toLowerCase().includes("ap");
-                                        let hourFmt = is12h ? (fmt.includes("hh") ? "hh" : "h") : (fmt.includes("H") && !fmt.includes("HH") ? "H" : "HH");
-                                        clockHours.text = Qt.formatDateTime(d, hourFmt);
-                                        clockMinutes.text = Qt.formatDateTime(d, "mm");
-                                        clockAmPm.text = is12h ? Qt.formatDateTime(d, "AP") : "";
-                                        dateText.text = Qt.formatDateTime(d, "dddd, d MMMM").toUpperCase();
+                                Connections {
+                                    target: typeof DateTime !== "undefined" ? DateTime : null
+                                    function onNowChanged() {
+                                        clockModule.currentTime = DateTime.now;
                                     }
+                                }
+                            }
+
+                            Rectangle {
+                                id: mainDashboardShellShadow
+                                anchors.fill: mainDashboardShell
+                                anchors.topMargin: screenRoot.s(1.5)
+                                anchors.bottomMargin: -screenRoot.s(1.5)
+                                radius: mainDashboardShell.radius
+                                color: Qt.rgba(0, 0, 0, 0.14)
+                                opacity: mainDashboardShell.opacity
+                                scale: mainDashboardShell.scale
+                                visible: mainDashboardShell.visible
+                                transform: Scale {
+                                    origin.x: mainDashboardShell.width / 2
+                                    origin.y: mainDashboardShell.height / 2
+                                    xScale: screenRoot.isUnlocking ? screenRoot.foldScaleX : 1.0
+                                    yScale: screenRoot.isUnlocking ? screenRoot.foldScaleY : 1.0
                                 }
                             }
 
@@ -1148,7 +1211,7 @@ Scope {
                                 anchors.centerIn: parent
                                 anchors.verticalCenterOffset: screenRoot.inputActive ? screenRoot.s(0) : screenRoot.s(90)
                                 width: Math.min(parent.width - screenRoot.s(48), screenRoot.s(440) + (screenRoot.wingsReveal * screenRoot.s(780)))
-                                height: screenRoot.s(540)
+                                height: screenRoot.s(580)
                                 radius: ThemeBackend.borderRadius * 1.5
                                 color: ThemeBackend.surface0
                                 border.width: 1.5
@@ -1204,15 +1267,15 @@ Scope {
                                         anchors.margins: screenRoot.s(24)
                                         spacing: 0
 
-                                        Item { Layout.fillHeight: true; Layout.preferredHeight: screenRoot.s(22) }
+                                        Item { Layout.fillHeight: true; Layout.preferredHeight: screenRoot.s(16) }
 
                                         ImageBox {
                                             Layout.alignment: Qt.AlignHCenter
-                                            Layout.preferredWidth: screenRoot.s(190)
-                                            Layout.preferredHeight: screenRoot.s(190)
-                                            size: screenRoot.s(190)
-                                            cornerRadius: screenRoot.s(95)
-                                            imageRadius: screenRoot.s(95)
+                                            Layout.preferredWidth: screenRoot.s(214)
+                                            Layout.preferredHeight: screenRoot.s(214)
+                                            size: screenRoot.s(214)
+                                            cornerRadius: screenRoot.s(107)
+                                            imageRadius: screenRoot.s(107)
                                             source: screenRoot.faceIconPath !== "" ? screenRoot.faceIconPath : (SystemInfo.avatarPath !== "" ? (SystemInfo.avatarPath.startsWith("file://") ? SystemInfo.avatarPath : "file://" + SystemInfo.avatarPath) : "")
                                             backgroundColor: (screenRoot.faceIconPath === "" && SystemInfo.avatarPath === "") ? ThemeBackend.surface1 : "transparent"
 
@@ -1220,30 +1283,48 @@ Scope {
                                                 anchors.centerIn: parent
                                                 text: ""
                                                 font.family: "Iosevka Nerd Font"
-                                                font.pixelSize: screenRoot.s(95)
+                                                font.pixelSize: screenRoot.s(107)
                                                 color: ThemeBackend.text
                                                 visible: screenRoot.faceIconPath === "" && SystemInfo.avatarPath === ""
                                             }
                                         }
 
-                                        Item { Layout.fillHeight: true; Layout.preferredHeight: screenRoot.s(20) }
+                                        Item { Layout.fillHeight: true; Layout.preferredHeight: screenRoot.s(16) }
 
                                         ColumnLayout {
                                             Layout.fillWidth: true
                                             Layout.alignment: Qt.AlignHCenter
                                             spacing: screenRoot.s(14)
 
-                                            ClickButton {
+                                            RowLayout {
                                                 Layout.alignment: Qt.AlignHCenter
-                                                Layout.preferredHeight: screenRoot.s(38)
-                                                cornerRadius: ThemeBackend.borderRadius
-                                                horizontalPadding: screenRoot.s(16)
-                                                buttonIcon: ""
-                                                iconFontSize: screenRoot.s(15)
-                                                buttonText: screenRoot.currentUser + " • " + lockUI.statusText
-                                                textFontSize: screenRoot.s(13)
-                                                accentColor: Qt.lighter(ThemeBackend.surface0, 1.28)
-                                                textColor: lockUI.failed ? ThemeBackend.red : (lockUI.authenticating ? ThemeBackend.peach : ThemeBackend.text)
+                                                spacing: screenRoot.s(10)
+
+                                                ClickButton {
+                                                    Layout.preferredHeight: screenRoot.s(38)
+                                                    cornerRadius: ThemeBackend.borderRadius
+                                                    horizontalPadding: screenRoot.s(16)
+                                                    buttonIcon: "󰀉"
+                                                    iconFontSize: screenRoot.s(15)
+                                                    buttonText: screenRoot.currentUser
+                                                    textFontSize: screenRoot.s(13)
+                                                    accentColor: Qt.lighter(ThemeBackend.surface0, 1.28)
+                                                    textColor: ThemeBackend.text
+                                                    onClicked: screenRoot.restoreFocus()
+                                                }
+
+                                                ClickButton {
+                                                    Layout.preferredHeight: screenRoot.s(38)
+                                                    cornerRadius: ThemeBackend.borderRadius
+                                                    horizontalPadding: screenRoot.s(16)
+                                                    buttonIcon: ""
+                                                    iconFontSize: screenRoot.s(15)
+                                                    buttonText: lockUI.statusText
+                                                    textFontSize: screenRoot.s(13)
+                                                    accentColor: Qt.lighter(ThemeBackend.surface0, 1.28)
+                                                    textColor: lockUI.failed ? ThemeBackend.red : (lockUI.authenticating ? ThemeBackend.peach : ThemeBackend.text)
+                                                    onClicked: screenRoot.restoreFocus()
+                                                }
                                             }
 
                                             PasswordInput {
@@ -1271,7 +1352,12 @@ Scope {
                                                 hasError: lockUI.failed
                                                 isBusy: lockUI.authenticating
                                                 isWidgetVisible: rootLock.locked && screenRoot.inputActive
-                                                isRevealed: !lockSettings.hidePassword
+
+                                                onActiveFocusChanged: {
+                                                    if (!activeFocus && rootLock.locked && !screenRoot.isUnlocking && screenRoot.inputActive) {
+                                                        Qt.callLater(screenRoot.restoreFocus);
+                                                    }
+                                                }
 
                                                 onAccepted: (finalText) => {
                                                     if (finalText.length > 0 && pam.responseRequired && !lockUI.authenticating) {
@@ -1306,6 +1392,9 @@ Scope {
                                                         passwordInput.clear();
                                                         screenRoot.restoreFocus();
                                                         event.accepted = true;
+                                                    } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                                                        event.accepted = true;
+                                                        screenRoot.restoreFocus();
                                                     }
                                                 }
                                             }
@@ -1517,10 +1606,10 @@ Scope {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    anchors.topMargin: screenRoot.s(2)
-                                    anchors.bottomMargin: -screenRoot.s(2)
+                                    anchors.topMargin: screenRoot.s(1.5)
+                                    anchors.bottomMargin: -screenRoot.s(1.5)
                                     radius: screenRoot.s(16)
-                                    color: Qt.rgba(0, 0, 0, 0.22)
+                                    color: Qt.rgba(0, 0, 0, 0.14)
                                 }
 
                                 Rectangle {
@@ -1699,7 +1788,6 @@ Scope {
                                     icon: "\uF2DB"
                                     title: I18n.t("quickactions.systemusage.cpu")
                                     valueText: Math.round(screenRoot.cpuUsage * 100) + "%"
-                                    wavePhase: screenRoot.globalWavePhase
                                     isLive: screenRoot.wingsReveal > 0.98
                                     hasShadow: true
                                     compact: true
@@ -1716,7 +1804,6 @@ Scope {
                                     icon: "\uF538"
                                     title: I18n.t("quickactions.systemusage.ram")
                                     valueText: screenRoot.ramUsedGb.toFixed(1) + "G"
-                                    wavePhase: screenRoot.globalWavePhase
                                     isLive: screenRoot.wingsReveal > 0.98
                                     hasShadow: true
                                     compact: true
@@ -1733,7 +1820,6 @@ Scope {
                                     icon: "\uF2C9"
                                     title: I18n.t("quickactions.systemusage.temp")
                                     valueText: Math.round(screenRoot.tempC) + "°"
-                                    wavePhase: screenRoot.globalWavePhase
                                     isLive: screenRoot.wingsReveal > 0.98
                                     hasShadow: true
                                     compact: true
@@ -1751,7 +1837,6 @@ Scope {
                                     title: screenRoot.diskTotalText
                                     subText: screenRoot.diskUsedText
                                     valueText: Math.round(screenRoot.diskUsagePercent * 100) + "%"
-                                    wavePhase: screenRoot.globalWavePhase
                                     isLive: screenRoot.wingsReveal > 0.98
                                     hasShadow: true
                                     compact: true
@@ -1768,7 +1853,6 @@ Scope {
                                     icon: "󰤨"
                                     title: I18n.t("quickactions.systemusage.net")
                                     valueText: ""
-                                    wavePhase: screenRoot.globalWavePhase
                                     isLive: screenRoot.wingsReveal > 0.98
                                     hasShadow: true
                                     compact: true
@@ -1776,20 +1860,6 @@ Scope {
                                     ColumnLayout {
                                         anchors.centerIn: parent
                                         spacing: screenRoot.s(6)
-
-                                        ClickButton {
-                                            Layout.alignment: Qt.AlignHCenter
-                                            buttonText: SysData.isScanningNet ? "Scanning..." : "Scan"
-                                            buttonIcon: SysData.isScanningNet ? "\uF110" : "\uF021"
-                                            iconFontSize: Math.round(screenRoot.s(14))
-                                            textFontSize: Math.round(screenRoot.s(12))
-                                            accentColor: Qt.rgba(ThemeBackend.surface1.r, ThemeBackend.surface1.g, ThemeBackend.surface1.b, 0.7)
-                                            textColor: ThemeBackend.text
-                                            cornerRadius: Math.round(screenRoot.s(8))
-                                            horizontalPadding: Math.round(screenRoot.s(10))
-                                            enabled: !SysData.isScanningNet
-                                            onClicked: SysData.scanNetwork()
-                                        }
 
                                         Rectangle {
                                             Layout.preferredHeight: screenRoot.s(26)
@@ -1873,7 +1943,7 @@ Scope {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 hasShadow: true
-                                shadowColor: Qt.rgba(0, 0, 0, 0.22)
+                                shadowColor: Qt.rgba(0, 0, 0, 0.14)
                                 baseColor: Qt.lighter(ThemeBackend.surface0, 1.28)
                                 borderWidth: 1
                                 borderColor: Qt.rgba(ThemeBackend.text.r, ThemeBackend.text.g, ThemeBackend.text.b, 0.06)
@@ -1890,10 +1960,10 @@ Scope {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    anchors.topMargin: screenRoot.s(2)
-                                    anchors.bottomMargin: -screenRoot.s(2)
+                                    anchors.topMargin: screenRoot.s(1.5)
+                                    anchors.bottomMargin: -screenRoot.s(1.5)
                                     radius: screenRoot.s(16)
-                                    color: Qt.rgba(0, 0, 0, 0.22)
+                                    color: Qt.rgba(0, 0, 0, 0.14)
                                 }
 
                                 Rectangle {
@@ -1920,65 +1990,19 @@ Scope {
                                             maskSource: mediaBgMask
                                         }
 
-                                        Row {
+                                        Visualizer {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
                                             anchors.bottom: parent.bottom
                                             height: Math.max(30, parent.height * 0.85)
-                                            spacing: Math.max(2, Math.floor(parent.width * 0.008))
-
-                                            property int barCount: 32
-                                            property real barSpacing: spacing
-                                            property int activeBars: Math.min(barCount, Math.max(4, Math.floor(parent.width / (5 + barSpacing))))
-                                            property var barLevels: {
-                                                let source = Cava.barLevels;
-                                                let count = activeBars;
-                                                let out = [];
-                                                if (!source || source.length === 0) {
-                                                    for (let i = 0; i < count; i++) out.push(0.0);
-                                                    return out;
-                                                }
-                                                let srcLen = source.length;
-                                                let half = (count - 1) / 2;
-                                                for (let i = 0; i < count; i++) {
-                                                    let distFromCenter = Math.abs(i - half);
-                                                    let norm = half > 0 ? (distFromCenter / half) : 0;
-                                                    let pos = Math.pow(norm, 1.25) * (srcLen - 1);
-                                                    let idx0 = Math.floor(pos);
-                                                    let idx1 = Math.min(srcLen - 1, idx0 + 1);
-                                                    let frac = pos - idx0;
-                                                    let v0 = source[idx0] || 0.0;
-                                                    let v1 = source[idx1] || 0.0;
-                                                    let rawVal = v0 + (v1 - v0) * frac;
-                                                    let val = rawVal < 0.03 ? 0.0 : Math.pow((rawVal - 0.03) / 0.97, 1.15);
-                                                    out.push(Math.max(0.0, Math.min(1.0, val)));
-                                                }
-                                                return out;
-                                            }
-
-                                            Repeater {
-                                                model: parent.activeBars
-                                                delegate: Rectangle {
-                                                    width: (parent.width - (parent.activeBars - 1) * parent.barSpacing) / parent.activeBars
-                                                    height: Math.max(2, level * parent.height * 0.9)
-                                                    topLeftRadius: width * 0.5
-                                                    topRightRadius: width * 0.5
-                                                    bottomLeftRadius: 0
-                                                    bottomRightRadius: 0
-                                                    color: ThemeBackend.mauve
-                                                    opacity: 0.22 + (level * 0.18)
-                                                    anchors.bottom: parent.bottom
-
-                                                    Behavior on height {
-                                                        NumberAnimation { duration: 75; easing.type: Easing.OutCubic }
-                                                    }
-                                                    Behavior on opacity {
-                                                        NumberAnimation { duration: 75; easing.type: Easing.OutQuad }
-                                                    }
-
-                                                    property real level: (parent.barLevels && index < parent.barLevels.length) ? parent.barLevels[index] : 0.0
-                                                }
-                                            }
+                                            active: screenRoot.isCavaSubscribed
+                                            count: Math.min(32, Math.max(4, Math.floor(width / (5 + spacing))))
+                                            spacing: Math.max(2, Math.floor(width * 0.008))
+                                            rise: 0.5
+                                            fall: 0.5
+                                            maxLength: height * 0.9
+                                            opacityBase: 0.22
+                                            opacityRange: 0.18
                                         }
                                     }
 
@@ -2012,6 +2036,8 @@ Scope {
                                                 anchors.fill: parent
                                                 source: (screenRoot.isMediaActive && MprisController.artUrl) ? (MprisController.artUrl.startsWith("file://") ? MprisController.artUrl : "file://" + MprisController.artUrl) : ""
                                                 fillMode: Image.PreserveAspectCrop
+                                                asynchronous: true
+                                                sourceSize: Qt.size(screenRoot.s(60), screenRoot.s(60))
                                                 visible: false
                                             }
 
@@ -2037,60 +2063,15 @@ Scope {
                                             Layout.alignment: Qt.AlignVCenter
                                             spacing: 2
 
-                                            Item {
-                                                id: lockMediaTitleClip
+                                            MarqueeText {
                                                 Layout.fillWidth: true
-                                                implicitHeight: lockMediaTitleText.implicitHeight
-                                                clip: true
-
-                                                property int marqueeSpacing: screenRoot.s(30)
-                                                property real scrollProgress: 0.0
-
-                                                Item {
-                                                    id: lockMediaMarquee
-                                                    height: parent.height
-                                                    x: lockMediaTitleText.implicitWidth > lockMediaTitleClip.width ? -lockMediaTitleClip.scrollProgress * (lockMediaTitleText.implicitWidth + lockMediaTitleClip.marqueeSpacing) : 0
-
-                                                    Row {
-                                                        spacing: lockMediaTitleClip.marqueeSpacing
-                                                        Text {
-                                                            id: lockMediaTitleText
-                                                            text: screenRoot.isMediaActive ? (MprisController.trackTitle || "Unknown Track") : I18n.t("music.nothing_playing")
-                                                            font.family: ThemeBackend.fontFamily
-                                                            font.weight: Font.Black
-                                                            font.pixelSize: screenRoot.s(13)
-                                                            color: ThemeBackend.text
-
-                                                            onTextChanged: {
-                                                                lockMediaTitleClip.scrollProgress = 0.0;
-                                                            }
-                                                        }
-
-                                                        Text {
-                                                            text: lockMediaTitleText.text
-                                                            font.family: ThemeBackend.fontFamily
-                                                            font.weight: Font.Black
-                                                            font.pixelSize: screenRoot.s(13)
-                                                            color: ThemeBackend.text
-                                                            visible: lockMediaTitleText.implicitWidth > lockMediaTitleClip.width
-                                                        }
-                                                    }
-                                                }
-
-                                                SequentialAnimation {
-                                                    loops: Animation.Infinite
-                                                    running: lockMediaTitleText.implicitWidth > lockMediaTitleClip.width
-
-                                                    PauseAnimation { duration: 3000 }
-                                                    NumberAnimation {
-                                                        target: lockMediaTitleClip
-                                                        property: "scrollProgress"
-                                                        from: 0.0
-                                                        to: 1.0
-                                                        duration: (lockMediaTitleText.implicitWidth + lockMediaTitleClip.marqueeSpacing) * 25
-                                                    }
-                                                    PropertyAction { target: lockMediaTitleClip; property: "scrollProgress"; value: 0.0 }
-                                                }
+                                                text: screenRoot.isMediaActive ? (MprisController.trackTitle || "Unknown Track") : I18n.t("music.nothing_playing")
+                                                color: ThemeBackend.text
+                                                font.family: ThemeBackend.fontFamily
+                                                font.weight: Font.Black
+                                                font.pixelSize: screenRoot.s(13)
+                                                marqueeSpacing: screenRoot.s(30)
+                                                active: screenRoot.wingsReveal > 0.98 && screenRoot.isMediaActive && MprisController.isPlaying
                                             }
 
                                             Text {

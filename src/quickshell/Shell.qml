@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import "widgets"
 
 ShellRoot {
     readonly property bool performanceMode: !!(Config.getSetting("general", {}).performance)
@@ -16,16 +17,13 @@ ShellRoot {
     Main {}
     Bar {}
     Lock {}
+    WidgetRedactor {}
 
     Launcher {}
-    Clipboard {}
+    Clipboard {}    
 
     Polkit {}
     PopoutManager {}
-
-    // Loads enabled Serpantinum plugins after the core shell objects exist.
-    // Plugin entry points are intentionally isolated behind PluginHost so the
-    // loader can evolve without coupling the rest of Shell.qml to plugin internals.
     PluginHost {}
 
     Loader {
@@ -55,6 +53,10 @@ ShellRoot {
     }
 
     Component.onCompleted: {
+        Qt.application.organization = "serpantinum";
+        Qt.application.domain = "serpantinum.org";
+        Qt.application.name = "serpantinum";
         FirstLaunch.checkFirstLaunch();
+        SysNotif.checkBattery();
     }
 }

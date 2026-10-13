@@ -39,7 +39,10 @@
       "display_widgets": "Tiện ích",
       "display_general": "Chung",
       "osd": "OSD",
-      "dock": "Dock"
+      "dock": "Dock",
+      "bar_general": "Chung",
+      "bar_modules": "Mô-đun",
+      "bar_side_modules": "Mô-đun bên cạnh"
     },
     "launcher": {
       "position": {
@@ -145,23 +148,24 @@
       },
       "dim": {
         "title": "Làm mờ màn hình",
-        "desc": "Thời gian trước khi làm mờ màn hình"
+        "desc": "Giảm độ sáng màn hình trước khi khóa"
       },
       "dpms": {
         "title": "Tắt màn hình (DPMS)",
-        "desc": "Thời gian trước khi tắt hoàn toàn màn hình"
+        "desc": "Tắt tín hiệu màn hình hiển thị"
       },
       "lock": {
         "title": "Khóa phiên",
-        "desc": "Thời gian trước khi yêu cầu nhập mật khẩu"
+        "desc": "Khóa phiên làm việc sau một khoảng thời gian không hoạt động"
       },
       "suspend": {
         "title": "Ngủ đông hệ thống",
-        "desc": "Thời gian trước khi đưa máy vào chế độ ngủ"
+        "desc": "Đưa hệ thống vào chế độ ngủ"
       },
       "hooks": {
         "title": "Hook (lệnh shell)"
-      }
+      },
+      "custom_action_desc": "Hành động và lệnh hết thời gian tùy chỉnh"
     },
     "welcome": {
       "by_author": "bởi @{author}",
@@ -268,14 +272,24 @@
         "save_preset": {
           "title": "Lưu preset"
         },
-        "preset_name_placeholder": "Nhập tên preset..."
+        "preset_name_placeholder": "Nhập tên preset...",
+        "screen_desc": "Cấu hình và chỉnh sửa tiện ích màn hình nền"
       }
     },
     "bar": {
       "modules": {
         "vis": "Trình hiển thị âm thanh (cava)",
         "actions": "Thao tác",
-        "workspaces": "Không gian làm việc",
+        "workspaces": {
+          "style": {
+            "name": {
+              "pills": "Dạng viên",
+              "numbers": "Số",
+              "pacman": "Pacman"
+            }
+          },
+          "name": "Không gian làm việc"
+        },
         "media": "Phương tiện",
         "tray": "Khay hệ thống",
         "keyboard": "Bàn phím",
@@ -285,7 +299,16 @@
         "battery": "Pin",
         "focus": "Tiêu điểm",
         "sysmon": "Trình theo dõi hệ thống",
-        "timedate": "Giờ/Ngày",
+        "timedate": {
+          "name": "Thời gian & ngày",
+          "style": {
+            "name": {
+              "classic": "Cổ điển",
+              "material": "Material",
+              "badge": "Ma trận điểm"
+            }
+          }
+        },
         "info": "Ghi hình/Hẹn giờ",
         "weather": "Thời tiết"
       },
@@ -304,7 +327,15 @@
       "workspaces": {
         "title": "Chọn số lượng không gian làm việc để hiển thị",
         "disc": "Lưu ý: điều này không ảnh hưởng đến số lượng không gian làm việc thực tế trong compositor",
-        "desc": "Số lượng không gian làm việc hiển thị"
+        "desc": "Số lượng không gian làm việc hiển thị",
+        "hide_empty": {
+          "title": "Ẩn không gian làm việc trống",
+          "desc": "Chỉ hiển thị không gian đang dùng và không gian hiện tại"
+        },
+        "style": {
+          "title": "Kiểu",
+          "desc": "Chọn kiểu hiển thị cho các chỉ báo không gian làm việc"
+        }
       },
       "opacity": {
         "title": "Độ mờ thanh tác vụ",
@@ -345,6 +376,159 @@
       "distinct_pills": {
         "title": "Bật kiểu dáng mô-đun và gọn gàng cho tiện ích",
         "desc": "Thêm đường viền cho các mô-đun trên thanh và thu nhỏ kích thước để phù hợp với giao diện mô-đun"
+      },
+      "timedate": {
+        "show_date": {
+          "title": "Hiển thị ngày",
+          "desc": "Hiển thị văn bản ngày bên cạnh đồng hồ"
+        },
+        "style": {
+          "title": "Kiểu",
+          "desc": "Chọn kiểu hiển thị cho đồng hồ và ngày"
+        }
+      },
+      "vis": {
+        "bars": {
+          "title": "Số lượng thanh",
+          "desc": "Số lượng thanh tần số hiển thị"
+        },
+        "alignment": {
+          "title": "Căn chỉnh",
+          "desc": "Căn giữa bộ trực quan hoặc căn theo phía trên hoặc dưới"
+        },
+        "align": {
+          "center": "Giữa",
+          "top": "Trên",
+          "bottom": "Dưới",
+          "left": "Trái",
+          "right": "Phải"
+        },
+        "continuous": {
+          "title": "Sóng liên tục",
+          "desc": "Hiển thị dạng sóng mượt mà thay vì các thanh riêng biệt"
+        }
+      },
+      "sysmon": {
+        "style": {
+          "title": "Kiểu vòng tròn",
+          "desc": "Giao diện vòng tiến trình",
+          "wave": "Sóng",
+          "circle": "Vòng tròn"
+        },
+        "cpu": {
+          "title": "Sử dụng CPU",
+          "desc": "Hiển thị vòng mức sử dụng bộ vi xử lý"
+        },
+        "ram": {
+          "title": "Sử dụng bộ nhớ",
+          "desc": "Hiển thị vòng mức sử dụng RAM"
+        },
+        "temp": {
+          "title": "Nhiệt độ",
+          "desc": "Hiển thị vòng nhiệt độ hệ thống"
+        },
+        "disk": {
+          "title": "Sử dụng ổ đĩa",
+          "desc": "Hiển thị vòng mức sử dụng bộ nhớ lưu trữ"
+        }
+      },
+      "bat": {
+        "show_percent": {
+          "title": "Hiển thị phần trăm",
+          "desc": "Hiển thị phần trăm pin dạng số"
+        },
+        "show_icon": {
+          "title": "Hiển thị biểu tượng",
+          "desc": "Hiển thị biểu tượng pin hoặc chỉ báo đồ họa"
+        },
+        "style": {
+          "title": "Kiểu pin",
+          "desc": "Chọn giao diện hiển thị của chỉ báo pin",
+          "name": {
+            "classic": "Cổ điển",
+            "minimal": "Tối giản",
+            "text": "Văn bản"
+          },
+          "classic": "Dạng viên thuốc với sóng chuyển màu",
+          "minimal": "Dạng thỏi iOS/Android có nắp",
+          "text": "Biểu tượng và văn bản không có nền"
+        }
+      },
+      "wifi": {
+        "show_icon": {
+          "title": "Hiển thị biểu tượng",
+          "desc": "Hiển thị biểu tượng mạng hoặc chỉ báo tín hiệu"
+        },
+        "show_name": {
+          "title": "Hiển thị tên",
+          "desc": "Hiển thị SSID mạng hoặc trạng thái kết nối"
+        },
+        "style": {
+          "title": "Kiểu dáng",
+          "desc": "Chọn giao diện trực quan của mô-đun mạng",
+          "name": {
+            "button": "Nút bấm",
+            "text": "Văn bản"
+          },
+          "button": "Nút tương tác có nền",
+          "text": "Biểu tượng và văn bản không có nền"
+        }
+      },
+      "bt": {
+        "show_icon": {
+          "title": "Hiển thị biểu tượng",
+          "desc": "Hiển thị biểu tượng trạng thái Bluetooth"
+        },
+        "show_name": {
+          "title": "Hiển thị tên",
+          "desc": "Hiển thị tên thiết bị Bluetooth đã kết nối"
+        },
+        "style": {
+          "title": "Kiểu dáng",
+          "desc": "Chọn giao diện trực quan của mô-đun Bluetooth",
+          "name": {
+            "button": "Nút bấm",
+            "text": "Văn bản"
+          },
+          "button": "Nút tương tác có nền",
+          "text": "Biểu tượng và văn bản không có nền"
+        }
+      },
+      "vol": {
+        "show_icon": {
+          "title": "Hiển thị biểu tượng",
+          "desc": "Hiển thị biểu tượng loa âm lượng"
+        },
+        "show_percent": {
+          "title": "Hiển thị phần trăm",
+          "desc": "Hiển thị phần trăm âm lượng dạng số"
+        },
+        "style": {
+          "title": "Kiểu dáng",
+          "desc": "Chọn giao diện trực quan của mô-đun âm lượng",
+          "name": {
+            "button": "Nút bấm",
+            "text": "Văn bản"
+          },
+          "button": "Nút tương tác có nền",
+          "text": "Biểu tượng và văn bản không có nền"
+        }
+      },
+      "kb": {
+        "show_icon": {
+          "title": "Hiển thị biểu tượng",
+          "desc": "Hiển thị biểu tượng bố cục bàn phím"
+        },
+        "style": {
+          "title": "Kiểu dáng",
+          "desc": "Chọn giao diện trực quan của mô-đun bàn phím",
+          "name": {
+            "button": "Nút bấm",
+            "text": "Văn bản"
+          },
+          "button": "Nút tương tác có nền",
+          "text": "Biểu tượng và văn bản không có nền"
+        }
       }
     },
     "theme": {
@@ -368,7 +552,8 @@
         "desc": "Thư mục để tìm kiếm hình nền",
         "select_dir": "Chọn thư mục...",
         "select_wallpaper": "Chọn hình nền",
-        "no_wallpaper_selected": "Chưa chọn hình nền nào"
+        "no_wallpaper_selected": "Chưa chọn hình nền nào",
+        "select": "Hình nền"
       }
     },
     "file_picker": {
@@ -380,8 +565,11 @@
       "places": {
         "home": "Thư mục cá nhân",
         "downloads": "Tải xuống",
-        "pictures": "Hình ảnh"
-      }
+        "pictures": "Hình ảnh",
+        "music": "Âm nhạc",
+        "documents": "Tài liệu"
+      },
+      "done": "Hoàn tất"
     },
     "font_picker": {
       "title": "Chọn phông chữ",
@@ -605,7 +793,44 @@
       "on_top": {
         "title": "Đặt dock lên trên các cửa sổ",
         "desc": "Giữ dock hiển thị phía trên các cửa sổ ứng dụng"
+      },
+      "smart_autohide": {
+        "title": "Tự động ẩn thông minh",
+        "desc": "Chỉ ẩn dock khi có cửa sổ mở, giữ hiển thị trên màn hình chính"
+      },
+      "focus_running": {
+        "title": "Tập trung vào cửa sổ hiện có",
+        "desc": "Nhấp vào biểu tượng ứng dụng sẽ kích hoạt cửa sổ đang mở thay vì khởi chạy phiên bản mới"
+      },
+      "show_running_indicators": {
+        "title": "Chỉ báo ứng dụng đang chạy",
+        "desc": "Hiển thị chỉ báo dấu chấm hoặc thanh trên các biểu tượng ứng dụng đang mở"
+      },
+      "show_running_apps": {
+        "title": "Hiển thị ứng dụng đang mở",
+        "desc": "Hiển thị các ứng dụng đang mở chưa ghim trong dock"
+      },
+      "running_scope": {
+        "title": "Phạm vi cửa sổ hoạt động",
+        "desc": "Lọc các cửa sổ đang chạy được hiển thị và điều khiển bởi dock",
+        "auto": "Tự động (mặc định của trình tổng hợp)",
+        "all": "Tất cả không gian làm việc & màn hình",
+        "output": "Chỉ màn hình hiện tại",
+        "workspace": "Chỉ không gian làm việc đang hoạt động"
+      },
+      "window_menu": {
+        "untitled": "Untitled"
       }
+    },
+    "lyrics_picker": {
+      "title": "Chọn tệp lời bài hát",
+      "no_lyrics_selected": "Chưa chọn tệp lời bài hát"
+    },
+    "settings": "Cài đặt",
+    "search": {
+      "placeholder": "Tìm kiếm cài đặt...",
+      "prompt": "Nhập để tìm kiếm cài đặt...",
+      "no_results": "Không tìm thấy cài đặt"
     }
   },
   "sysnotif": {
@@ -636,7 +861,12 @@
   },
   "applauncher": {
     "search": "Tìm kiếm",
-    "placeholder": "Bắt đầu bằng dấu > để nhập lệnh..."
+    "placeholder": "Bắt đầu bằng dấu > để nhập lệnh...",
+    "tab_applications": "Ứng dụng",
+    "tab_files": "Tệp",
+    "placeholder_files": "Tìm kiếm tệp hoặc nhập đường dẫn...",
+    "tab_emojis": "Biểu tượng cảm xúc",
+    "placeholder_emojis": "Tìm kiếm biểu tượng cảm xúc hoặc nhập từ khóa..."
   },
   "calendar": {
     "loading": "Đang tải...",
@@ -705,7 +935,11 @@
       "jazz": "Jazz",
       "classic": "Cổ điển",
       "custom": "Tùy chỉnh"
-    }
+    },
+    "searching_lyrics": "Đang tìm lời bài hát...",
+    "no_lyrics": "Không tìm thấy lời bài hát",
+    "select_local_file": "Chọn tệp cục bộ",
+    "lyrics": "Lời bài hát"
   },
   "network": {
     "tabs": {
@@ -794,6 +1028,46 @@
         "pomo_skipped_focus_body": "Đã bỏ qua phiên tập trung. Chuyển sang giờ nghỉ.",
         "pomo_skipped_break_body": "Đã bỏ qua giờ nghỉ. Quay lại phiên tập trung."
       }
+    },
+    "draw": {
+      "notification": {
+        "app_name": "DrawAction",
+        "saved_title": "Drawing saved",
+        "copied_title": "Drawing copied",
+        "copied_body": "Drawing copied to clipboard",
+        "failed_title": "Export failed",
+        "failed_body": "Could not save drawing"
+      }
+    },
+    "notes": {
+      "title": "Ghi chú",
+      "add_note": "Thêm ghi chú",
+      "new_note_title": "Ghi chú mới",
+      "edit_note": "Chỉnh sửa",
+      "preview_note": "Xem trước markdown",
+      "delete_selected": "Xóa đã chọn ({count})",
+      "no_notes": "Chưa có ghi chú nào. Nhấn «Thêm ghi chú».",
+      "search_placeholder": "Tìm kiếm ghi chú...",
+      "title_placeholder": "Tiêu đề ghi chú...",
+      "content_placeholder": "Nội dung ghi chú dạng markdown...",
+      "back": "Quay lại",
+      "save": "Xong",
+      "cancel": "Hủy",
+      "delete": "Xóa",
+      "select_all": "Chọn tất cả",
+      "deselect_all": "Bỏ chọn",
+      "selected_count": "Đã chọn {count}",
+      "pinned": "Đã ghim",
+      "recent": "Gần đây",
+      "pin": "Ghim",
+      "unpin": "Bỏ ghim"
+    },
+    "tabs": {
+      "draw": "Vẽ",
+      "system": "Hệ thống",
+      "timer": "Hẹn giờ",
+      "notes": "Ghi chú",
+      "tab": "Tab"
     }
   },
   "screenshot": {
@@ -989,7 +1263,9 @@
       "visualizer": "Trình trực quan hóa",
       "user": "Người dùng",
       "usage": "Mức sử dụng",
-      "battery": "Pin"
+      "battery": "Pin",
+      "github": "Github",
+      "time": "Thời gian"
     },
     "variants": {
       "digital": "Điện tử",
@@ -1002,7 +1278,12 @@
       "rounded": "Bo tròn",
       "bars": "Thanh",
       "continuous": "Liên tục",
-      "default": "Mặc định"
+      "default": "Mặc định",
+      "material": "Material",
+      "materialAnalog": "Material kim",
+      "lumen": "Lumen",
+      "lyrics": "Lời bài hát",
+      "simpleLyrics": "Lời bài hát đơn giản"
     },
     "presets": {
       "minimal": {
@@ -1017,6 +1298,26 @@
         "name": "Bảng Điều Khiển",
         "desc": "Bảng theo dõi toàn diện với đồng hồ số, mức sử dụng phần cứng và trạng thái pin."
       }
+    },
+    "github": {
+      "set_user": "Đặt người dùng",
+      "error": "Lỗi",
+      "commit": "commit",
+      "commits": "commit",
+      "no_day_selected": "Chưa chọn ngày",
+      "fetching": "Đang tải đóng góp GitHub...",
+      "fetch_error": "Không thể tải người dùng @{user}",
+      "enter_username": "Nhập tên người dùng GitHub",
+      "no_contributions": "Không tìm thấy đóng góp nào"
+    },
+    "settings": {
+      "lyricsLines": "Dòng",
+      "lyricsAlignment": "Căn chỉnh"
+    },
+    "align": {
+      "left": "Trái",
+      "center": "Giữa",
+      "right": "Phải"
     }
   },
   "cli": {

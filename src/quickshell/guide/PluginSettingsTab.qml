@@ -8,10 +8,11 @@ Item {
 
     required property var rootObj
     required property int tabIndex
+    required property int subTabIndex
     required property string pluginId
 
     anchors.fill: parent
-    visible: rootObj.currentTab === tabIndex && rootObj.selectedPluginSettingsId === pluginId
+    visible: rootObj.currentTab === tabIndex && rootObj.currentSubTab === subTabIndex
 
     readonly property var pluginData: PluginManager.pluginById(pluginId)
 

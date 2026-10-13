@@ -99,7 +99,7 @@ Item {
 
                                 Image {
                                     anchors.fill: parent
-                                    source: "file://" + rootObj.appPaths.serpantinumDir + "/assets/logo.svg"
+                                    source: "file://" + (typeof Caching !== "undefined" && Caching.serpantinumDir ? Caching.serpantinumDir : (rootObj && rootObj.appPaths ? rootObj.appPaths.serpantinumDir : "")) + "/assets/logo.svg"
                                     sourceSize: Qt.size(512, 512)
                                     fillMode: Image.PreserveAspectFit
                                     smooth: true
@@ -274,23 +274,25 @@ Item {
                                     textColor: "#ffffff"
                                 }
 
-                                Text {
+                                MarqueeText {
                                     text: modelData.label
-                                    font.family: ThemeBackend.fontFamily
                                     font.pixelSize: rootObj.s(12)
                                     color: ThemeBackend.text
                                     Layout.preferredWidth: rootObj.s(105)
-                                    elide: Text.ElideRight
+                                    Layout.maximumWidth: rootObj.s(105)
+                                    horizontalAlignment: Text.AlignLeft
+                                    active: aboutTabRoot.visible && (!rootObj || rootObj.visible)
+                                    marqueeSpacing: rootObj.s(30)
                                 }
 
-                                Text {
+                                MarqueeText {
                                     text: modelData.value
-                                    font.family: ThemeBackend.fontFamily
                                     font.pixelSize: rootObj.s(12)
                                     color: ThemeBackend.subtext0
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignRight
-                                    elide: Text.ElideRight
+                                    active: aboutTabRoot.visible && (!rootObj || rootObj.visible)
+                                    marqueeSpacing: rootObj.s(30)
                                 }
                             }
                         }
@@ -344,23 +346,25 @@ Item {
                                     textColor: "#ffffff"
                                 }
 
-                                Text {
+                                MarqueeText {
                                     text: modelData.label
-                                    font.family: ThemeBackend.fontFamily
                                     font.pixelSize: rootObj.s(12)
                                     color: ThemeBackend.text
                                     Layout.preferredWidth: rootObj.s(105)
-                                    elide: Text.ElideRight
+                                    Layout.maximumWidth: rootObj.s(105)
+                                    horizontalAlignment: Text.AlignLeft
+                                    active: aboutTabRoot.visible && (!rootObj || rootObj.visible)
+                                    marqueeSpacing: rootObj.s(30)
                                 }
 
-                                Text {
+                                MarqueeText {
                                     text: modelData.value
-                                    font.family: ThemeBackend.fontFamily
                                     font.pixelSize: rootObj.s(12)
                                     color: ThemeBackend.subtext0
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignRight
-                                    elide: Text.ElideRight
+                                    active: aboutTabRoot.visible && (!rootObj || rootObj.visible)
+                                    marqueeSpacing: rootObj.s(30)
                                 }
                             }
                         }

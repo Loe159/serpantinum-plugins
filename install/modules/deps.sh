@@ -52,8 +52,8 @@ REQUIRED_PKGS=(
     "bluez" "bluez-utils" "libnotify" "networkmanager" "lm_sensors" "bc" "matugen"
     "pipewire" "wireplumber" "pipewire-pulse" "pipewire-alsa" "libpulse" "python"
     "imagemagick" "wget" "file" "git" "psmisc"
-    "ffmpeg" "fastfetch" "quickshell" "unzip" "python-websockets" "qt6-websockets"
-    "grim" "playerctl" "satty" "xdg-desktop-portal-gtk" "slurp" "wmctrl" "power-profiles-daemon" "easyeffects" "nautilus" "qt5-wayland" "qt5-quickcontrols" "qt5-quickcontrols2" "qt5-graphicaleffects" "qt6-wayland"
+    "ffmpeg" "fastfetch" "quickshell" "unzip" "python-websockets" "python-jeepney" "qt6-websockets"
+    "grim" "playerctl" "satty" "xdg-desktop-portal-gtk" "slurp" "wmctrl" "power-profiles-daemon" "easyeffects" "lsp-plugins-lv2" "nautilus" "qt5-wayland" "qt5-quickcontrols" "qt5-quickcontrols2" "qt5-graphicaleffects" "qt6-wayland"
     "qt5ct" "qt6ct" "gpu-screen-recorder" "wf-recorder" "adw-gtk-theme" "wl-gammarelay-rs"
 )
 
@@ -167,6 +167,9 @@ install_fonts() {
 }
 
 install_dependencies() {
+    local install_state="${1:-$INSTALL_STATE}"
+    local is_reinstall="${2:-$IS_REINSTALL}"
+    shift 2 2>/dev/null || true
     local compositors=("$@")
 
     if pacman -Qq quickshell-git &>/dev/null; then
@@ -182,8 +185,10 @@ install_dependencies() {
         target_list+=("sddm" "qt6-declarative" "qt6-svg")
     fi
 
-    echo -e "\n\e[36m[ INFO ]\e[0m $(t "installer.deps.syncing")"
-    sudo pacman -Syyu --noconfirm
+    if [[ ("$install_state" == "fresh" || "$install_state" == "legacy") && "$is_reinstall" != "true" ]]; then
+        echo -e "\n\e[36m[ INFO ]\e[0m $(t "installer.deps.syncing")"
+        sudo pacman -Syyu --noconfirm
+    fi
 
     local missing_raw
     missing_raw=$(pacman -T "${target_list[@]}" 2>/dev/null || true)

@@ -340,7 +340,20 @@ Item {
     function reusableUrl(fileName) {
         const safeName = String(fileName || "");
         if (safeName === "" || safeName.indexOf("/") !== -1 || safeName.indexOf("\\") !== -1) return "";
-        return encodeURI("file://" + reusablesDir + "/" + safeName);
+        // Old plugin API names continue to resolve after the upstream reusables refactor.
+        const locations = {
+            "ClickButton.qml": "buttons", "IconButton.qml": "buttons", "FillButton.qml": "buttons",
+            "DeleteButton.qml": "buttons", "CanvasIconButton.qml": "buttons",
+            "Toggle.qml": "inputs", "Switch.qml": "inputs", "Input.qml": "inputs",
+            "Dropdown.qml": "inputs", "FilePicker.qml": "inputs", "ImagePicker.qml": "inputs",
+            "PasswordInput.qml": "inputs", "SliderProgress.qml": "inputs", "LyricsPicker.qml": "inputs",
+            "NumberSelector.qml": "inputs", "TimeSelector.qml": "inputs",
+            "FlipIcon.qml": "display", "ImageBox.qml": "display", "LoaderIcon.qml": "display",
+            "NotificationBox.qml": "display", "SystemUsageCard.qml": "display",
+            "Draggable.qml": "behavior", "ScreenPositionSelector.qml": "behavior",
+            "Reserved.qml": "layout", "SettingsRow.qml": "guide", "SettingsGroup.qml": "guide"
+        };
+        return encodeURI("file://" + reusablesDir + "/" + (locations[safeName] ? locations[safeName] + "/" : "") + safeName);
     }
 
     function arrayContainsModule(arr, moduleId) {

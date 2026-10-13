@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Window
-import QtCore
 import Qt.labs.folderlistmodel
 import QtMultimedia
 import QtQuick.Effects
@@ -12,6 +11,7 @@ import "../reusables"
 
 Item {
     id: window
+    visible: false
     width: Screen.width
     focus: true
 
@@ -50,6 +50,9 @@ Item {
 
     property bool isAnchorScrolling: false
     property bool _silentFilterChange: false
+    property bool _refreshedForDisplay: false
+    property string _lastFilterApplied: ""
+    property int _lastProxyVersion: -1
 
     property var configSettings: Config.rawSettings
     property string srcDir: {
@@ -102,7 +105,37 @@ Item {
     }
 
     property bool isStartup: srcModel.status === FolderListModel.Loading && localProxyModel.count === 0 && videoProxyModel.count === 0
-    property bool isReady: visible
+    property bool isExiting: false
+    property bool isReady: visible && !isExiting
+
+    property var exitCallback: null
+
+    function startExit(onFinished) {
+        if (isExiting) return;
+        isExiting = true;
+        exitCallback = onFinished;
+        exitAnim.restart();
+    }
+
+    SequentialAnimation {
+        id: exitAnim
+        running: false
+        ParallelAnimation {
+            NumberAnimation { target: filterBarBackground; property: "anchors.topMargin"; to: window.s(-75); duration: 180; easing.type: Easing.InCubic }
+            NumberAnimation { target: filterBarBackground; property: "opacity"; to: 0.0; duration: 160; easing.type: Easing.InQuad }
+            NumberAnimation { target: view; property: "opacity"; to: 0.0; duration: 200; easing.type: Easing.InQuad }
+            NumberAnimation { target: view; property: "anchors.margins"; to: window.s(45); duration: 200; easing.type: Easing.InCubic }
+        }
+        ScriptAction {
+            script: {
+                if (window.exitCallback) {
+                    let cb = window.exitCallback;
+                    window.exitCallback = null;
+                    cb();
+                }
+            }
+        }
+    }
 
     property bool _rawSearchLoading: searchFolderModel.status === FolderListModel.Loading
     property bool isSearchActive: false
@@ -152,18 +185,16 @@ Item {
         }
     }
 
-    Process {
+    FileView {
         id: wallpaperHistoryReader
-        running: false
-        command: ["cat", Caching.getCacheDir("wallpaper") + "/history.txt"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = this.text.trim().split("\n").map(s => s.trim()).filter(s => s.length > 0);
-                window.historyList = lines;
-                if (window.currentFilter === "History") {
-                    if (!window.reorderHistory()) {
-                        window.applyFilters(false);
-                    }
+        path: Caching.getCacheDir("wallpaper") + "/history.txt"
+        onLoaded: {
+            let raw = typeof text === "function" ? text() : text;
+            let lines = (raw || "").trim().split("\n").map(s => s.trim()).filter(s => s.length > 0);
+            window.historyList = lines;
+            if (window.currentFilter === "History") {
+                if (!window.reorderHistory()) {
+                    window.applyFilters(false);
                 }
             }
         }
@@ -237,13 +268,15 @@ Item {
                     activeWallpaper = Wallpaper.getWallpaper(scName);
                 }
                 window.trackerResolved = true;
-                if (window.widgetArg !== "") {
-                    window.targetWallName = window.widgetArg;
-                } else if (activeWallpaper !== "") {
-                    window.targetWallName = activeWallpaper;
+                let newTarget = (window.widgetArg !== "") ? window.widgetArg : (activeWallpaper !== "" ? activeWallpaper : window.targetWallName);
+                let targetChanged = (newTarget !== window.targetWallName);
+                if (newTarget !== "") {
+                    window.targetWallName = newTarget;
                 }
-                window.initialFocusSet = false;
-                window.selectCurrentWallpaperTabAndFocus();
+                if (targetChanged || !window.initialFocusSet) {
+                    window.initialFocusSet = false;
+                    window.selectCurrentWallpaperTabAndFocus();
+                }
             }
         }
     }
@@ -425,8 +458,7 @@ Item {
             window.reorderHistory();
         }
 
-        wallpaperHistoryReader.running = false;
-        wallpaperHistoryReader.running = true;
+        wallpaperHistoryReader.reload();
 
         if (window.currentFilter === "Search" && window.hasSearched) {
             let alreadyExists = window.isDownloaded(safeFileName);
@@ -498,14 +530,24 @@ Item {
         }
     }
 
-    Settings {
+    QtObject {
         id: searchState
-        location: Caching.getCacheDir("wallpaper") + "/settings.conf"
-        category: "QS_WallpaperPicker"
         property string query: ""
         property bool searched: false
         property string lastName: ""
         property int sessionId: 0
+
+        readonly property string filePath: Caching.getCacheDir("wallpaper") + "/search_state.json"
+
+        function save() {
+            let data = JSON.stringify({
+                query: searchState.query,
+                searched: searchState.searched,
+                lastName: searchState.lastName,
+                sessionId: searchState.sessionId
+            });
+            Quickshell.execDetached(["sh", "-c", "printf '%s\\n' \"$1\" > \"$2\"", "_", data, filePath]);
+        }
     }
 
     onIsSearchPausedChanged: {
@@ -547,12 +589,17 @@ Item {
     }
 
     function refreshForDisplay() {
+        window._refreshedForDisplay = true;
+        if (!window.targetWallName) {
+            let scName = masterWindow.screen ? masterWindow.screen.name : "";
+            let current = (typeof Wallpaper !== "undefined") ? Wallpaper.getWallpaper(scName) : "";
+            if (current) window.targetWallName = current;
+        }
         window.initialFocusSet = false;
         window.trackerResolved = false;
         wallpaperMonitorTracker.running = false;
         wallpaperMonitorTracker.running = true;
-        wallpaperHistoryReader.running = false;
-        wallpaperHistoryReader.running = true;
+        wallpaperHistoryReader.reload();
         window.isFilterAnimating = true;
         filterAnimationTimer.restart();
 
@@ -571,6 +618,9 @@ Item {
 
     onVisibleChanged: {
         if (!visible) {
+            window._refreshedForDisplay = false;
+            window.isExiting = false;
+            exitAnim.stop();
             window.initialFocusSet = false;
             window.allowAddAnimation = false;
             window.searchIndexRestored = false;
@@ -583,12 +633,14 @@ Item {
                 searchState.searched = window.hasSearched;
                 searchState.lastName = window.lastSearchName;
                 searchState.sessionId = window.searchSessionId;
+                searchState.save();
                 Quickshell.execDetached([
                     window.scriptDir + "/search_control.sh",
                     "pause",
                     Caching.getRunDir("wallpaper")
                 ]);
             } else {
+                searchState.save();
                 Quickshell.execDetached([
                     window.scriptDir + "/search_control.sh",
                     "stop",
@@ -596,8 +648,14 @@ Item {
                 ]);
             }
         } else {
+            window.isExiting = false;
+            exitAnim.stop();
             window.loadMonitors();
-            window.refreshForDisplay();
+            if (!window._refreshedForDisplay) {
+                window.refreshForDisplay();
+            } else if (displayModel.count > 0 && view.currentIndex >= 0) {
+                view.positionViewAtIndex(view.currentIndex, ListView.Center);
+            }
             focusTimer.restart();
         }
     }
@@ -676,6 +734,7 @@ Item {
         window.visibleItemCount = 0;
         searchState.searched = true;
         searchState.query = searchInput.text.trim();
+        searchState.save();
         window.isSearchPaused = false;
         window.searchQuery = searchInput.text.trim();
         window._lastFilter = window.currentFilter;
@@ -760,6 +819,11 @@ Item {
     function syncFromSrcModel() {
         if (srcModel.status !== FolderListModel.Ready || srcModel.count === 0) return;
 
+        if ((localProxyModel.count > 0 || videoProxyModel.count > 0) &&
+            srcModel.count === (localProxyModel.count + videoProxyModel.count)) {
+            return;
+        }
+
         let localItems = [];
         let videoItems = [];
         let seen = {};
@@ -815,6 +879,14 @@ Item {
         window.cacheVersion++;
 
         if (localProxyModel.count === 0 && videoProxyModel.count === 0) {
+            const order = { "Red": 1, "Orange": 2, "Yellow": 3, "Green": 4, "Blue": 5, "Purple": 6, "Pink": 7, "Monochrome": 8 };
+            localItems.sort((a, b) => {
+                let oA = order[a.bucket] || 10;
+                let oB = order[b.bucket] || 10;
+                if (oA !== oB) return oA - oB;
+                return String(a.fileName).localeCompare(String(b.fileName));
+            });
+            videoItems.sort((a, b) => String(a.fileName).localeCompare(String(b.fileName)));
             if (localItems.length > 0) localProxyModel.append(localItems);
             if (videoItems.length > 0) videoProxyModel.append(videoItems);
             if (window.currentFilter !== "Search") {
@@ -849,6 +921,37 @@ Item {
         interval: 150
         repeat: false
         onTriggered: window.triggerIndexer()
+    }
+
+    Process {
+        id: searchStateReader
+        running: false
+        command: ["sh", "-c", "[ -f \"$1\" ] && cat \"$1\"", "_", Caching.getCacheDir("wallpaper") + "/search_state.json"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let trimmed = this.text ? this.text.trim() : "";
+                if (trimmed.length > 0) {
+                    try {
+                        let data = JSON.parse(trimmed);
+                        if (data && typeof data === "object") {
+                            searchState.query = data.query || "";
+                            searchState.searched = !!data.searched;
+                            searchState.lastName = data.lastName || "";
+                            searchState.sessionId = data.sessionId || 0;
+
+                            if (searchState.searched) {
+                                searchInput.text = searchState.query;
+                                window.searchQuery = searchState.query;
+                                window.hasSearched = true;
+                                window.lastSearchName = searchState.lastName;
+                                window.searchSessionId = searchState.sessionId;
+                                window.isSearchPaused = true;
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
     }
 
     Process {
@@ -959,12 +1062,6 @@ Item {
             }
         }
 
-        window.srcNameLookup = newSrcLookup;
-        window.thumbLookup = newThumbLookup;
-        window.colorMap = newColorMap;
-        window.bucketMap = newBucketMap;
-        window.cacheVersion++;
-
         const order = { "Red": 1, "Orange": 2, "Yellow": 3, "Green": 4, "Blue": 5, "Purple": 6, "Pink": 7, "Monochrome": 8 };
         localItems.sort((a, b) => {
             let oA = order[a.bucket] || 10;
@@ -978,6 +1075,12 @@ Item {
         let videoChanged = !window.itemsEqualToModel(videoProxyModel, videoItems);
 
         if (!localChanged && !videoChanged) return;
+
+        window.srcNameLookup = newSrcLookup;
+        window.thumbLookup = newThumbLookup;
+        window.colorMap = newColorMap;
+        window.bucketMap = newBucketMap;
+        window.cacheVersion++;
 
         window.isModelChanging = true;
         let wasAllowing = window.allowAddAnimation;
@@ -1049,8 +1152,7 @@ Item {
         window.currentFilter = newFilter;
 
         if (newFilter === "History") {
-            wallpaperHistoryReader.running = false;
-            wallpaperHistoryReader.running = true;
+            wallpaperHistoryReader.reload();
         }
 
         Qt.callLater(() => {
@@ -1080,6 +1182,80 @@ Item {
         window.isModelChanging = true;
         window.resetPreviewPlayer();
 
+        let focusName = (window.currentFilter === "Search" && window.hasSearched && !window.trackerResolved) ? window.lastSearchName : window.targetWallName;
+        let cleanTarget = window.getCleanBaseName(focusName);
+        let fullTarget = window.getCleanName(focusName);
+
+        let localModes = ["All", "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Monochrome"];
+        let isLocalMode = localModes.indexOf(window.currentFilter) !== -1;
+        let wasLocalMode = localModes.indexOf(window._lastFilterApplied) !== -1;
+
+        let canReuseDisplay = false;
+        if (displayModel.count > 0 && window._lastProxyVersion === window.cacheVersion) {
+            if (isLocalMode && wasLocalMode) {
+                canReuseDisplay = true;
+            } else if (window.currentFilter === window._lastFilterApplied && window.currentFilter !== "History") {
+                canReuseDisplay = true;
+            }
+        }
+
+        if (canReuseDisplay) {
+            let targetIndex = -1;
+            let anchorIndex = -1;
+
+            if (cleanTarget !== "") {
+                for (let i = 0; i < displayModel.count; i++) {
+                    let it = displayModel.get(i);
+                    let fn = it ? (it.fileName || "") : "";
+                    if (fn && (fn === focusName || fn === fullTarget || window.getCleanName(fn) === fullTarget || window.getCleanBaseName(fn) === cleanTarget)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (isLocalMode && window.currentFilter !== "All") {
+                for (let i = 0; i < displayModel.count; i++) {
+                    let it = displayModel.get(i);
+                    if (it && it.bucket === window.currentFilter) {
+                        anchorIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            let indexToFocus = targetIndex !== -1 ? targetIndex : (anchorIndex !== -1 ? anchorIndex : (view.currentIndex >= 0 && view.currentIndex < displayModel.count ? view.currentIndex : 0));
+            window.jumpToLastOnFilterChange = false;
+
+            if (indexToFocus !== -1 && displayModel.count > 0) {
+                view.currentIndex = indexToFocus;
+                if (forceSnap) {
+                    view.positionViewAtIndex(indexToFocus, ListView.Center);
+                }
+
+                if (targetIndex !== -1 || cleanTarget === "") {
+                    window.initialFocusSet = true;
+                }
+
+                if (indexToFocus >= 0 && indexToFocus < displayModel.count && isLocalMode) {
+                    let bucket = displayModel.get(indexToFocus).bucket || "All";
+                    if (indexToFocus === 0) bucket = "All";
+                    if (window.currentFilter !== bucket && localModes.indexOf(bucket) !== -1) {
+                        window._silentFilterChange = true;
+                        window.currentFilter = bucket;
+                        window._silentFilterChange = false;
+                    }
+                }
+
+                if (window.currentFilter === "Search") window.searchIndexRestored = true;
+                allowAddAnimationTimer.restart();
+            }
+
+            window._lastFilterApplied = window.currentFilter;
+            window.isModelChanging = false;
+            return;
+        }
+
         let newItems = [];
         let seenNames = {};
         let firstValidIndex = -1;
@@ -1087,40 +1263,23 @@ Item {
         let targetIndex = -1;
         let anchorIndex = -1;
 
-        let focusName = (window.currentFilter === "Search" && window.hasSearched && !window.trackerResolved) ? window.lastSearchName : window.targetWallName;
-        let cleanTarget = window.getCleanBaseName(focusName);
-        let fullTarget = window.getCleanName(focusName);
-
-        if (window.currentFilter === "All") {
-            let combined = [];
+        if (isLocalMode) {
             for (let i = 0; i < localProxyModel.count; i++) {
                 let it = localProxyModel.get(i);
-                if (it && it.fileName && !seenNames[it.fileName]) {
-                    if (it.isVideo || window.isVideoTarget(it.fileName)) continue;
-                    seenNames[it.fileName] = true;
-                    combined.push(it);
-                }
-            }
+                if (!it || !it.fileName) continue;
+                let fname = it.fileName;
+                if (seenNames[fname]) continue;
+                seenNames[fname] = true;
 
-            const order = { "Red": 1, "Orange": 2, "Yellow": 3, "Green": 4, "Blue": 5, "Purple": 6, "Pink": 7, "Monochrome": 8 };
-            combined.sort((a, b) => {
-                let oA = order[a.bucket] !== undefined ? order[a.bucket] : 10;
-                let oB = order[b.bucket] !== undefined ? order[b.bucket] : 10;
-                if (oA !== oB) return oA - oB;
-                return String(a.fileName).localeCompare(String(b.fileName));
-            });
-
-            for (let i = 0; i < combined.length; i++) {
-                let fname = combined[i].fileName || "";
-                let bucket = combined[i].bucket || "Monochrome";
+                let bucket = it.bucket || "Monochrome";
                 newItems.push({
                     "fileName": fname,
-                    "filePath": combined[i].filePath || "",
-                    "fileUrl": String(combined[i].fileUrl),
-                    "posterPath": combined[i].posterPath || "",
-                    "posterUrl": String(combined[i].posterUrl || ""),
+                    "filePath": it.filePath || "",
+                    "fileUrl": String(it.fileUrl),
+                    "posterPath": it.posterPath || "",
+                    "posterUrl": String(it.posterUrl || ""),
                     "isVideo": false,
-                    "hex": combined[i].hex || "#808080",
+                    "hex": it.hex || "#808080",
                     "bucket": bucket
                 });
 
@@ -1128,15 +1287,21 @@ Item {
                 if (firstValidIndex === -1) firstValidIndex = currentIndex;
                 lastValidIndex = currentIndex;
 
-                if (cleanTarget !== "" && (fname === focusName || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget)) {
-                    targetIndex = currentIndex;
+                if (targetIndex === -1 && cleanTarget !== "") {
+                    if (fname === focusName || fname === fullTarget || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget) {
+                        targetIndex = currentIndex;
+                    }
+                }
+
+                if (anchorIndex === -1 && bucket === window.currentFilter) {
+                    anchorIndex = currentIndex;
                 }
             }
         } else if (window.currentFilter === "History") {
             let histItems = window.getHistoryItems();
             for (let h = 0; h < histItems.length; h++) {
                 let fname = histItems[h].fileName;
-                if (seenNames[fname]) continue;
+                if (!fname || seenNames[fname]) continue;
                 seenNames[fname] = true;
 
                 newItems.push({
@@ -1154,8 +1319,10 @@ Item {
                 if (firstValidIndex === -1) firstValidIndex = currentIndex;
                 lastValidIndex = currentIndex;
 
-                if (cleanTarget !== "" && (fname === focusName || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget)) {
-                    targetIndex = currentIndex;
+                if (targetIndex === -1 && cleanTarget !== "") {
+                    if (fname === focusName || fname === fullTarget || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget) {
+                        targetIndex = currentIndex;
+                    }
                 }
             }
         } else if (window.currentFilter === "Search" || window.currentFilter === "Video") {
@@ -1181,56 +1348,39 @@ Item {
                     if (firstValidIndex === -1) firstValidIndex = currentIndex;
                     lastValidIndex = currentIndex;
 
-                    if (cleanTarget !== "" && (fname === focusName || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget)) {
-                        targetIndex = currentIndex;
-                    }
-                }
-            }
-        } else {
-            if (sourceModel && sourceModel.count > 0) {
-                for (let i = 0; i < sourceModel.count; i++) {
-                    let it = sourceModel.get(i);
-                    let fname = it ? (it.fileName || "") : "";
-                    if (!fname || seenNames[fname]) continue;
-                    if (it.isVideo || window.isVideoTarget(fname)) continue;
-                    seenNames[fname] = true;
-
-                    let bucket = it.bucket || "Monochrome";
-                    newItems.push({
-                        "fileName": fname,
-                        "filePath": it.filePath || "",
-                        "fileUrl": String(it.fileUrl),
-                        "posterPath": it.posterPath || "",
-                        "posterUrl": String(it.posterUrl || ""),
-                        "isVideo": false,
-                        "hex": it.hex || "#808080",
-                        "bucket": bucket
-                    });
-
-                    let currentIndex = newItems.length - 1;
-                    if (firstValidIndex === -1) firstValidIndex = currentIndex;
-                    lastValidIndex = currentIndex;
-
-                    if (cleanTarget !== "" && (fname === focusName || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget)) {
-                        targetIndex = currentIndex;
-                    }
-
-                    if (anchorIndex === -1 && bucket === window.currentFilter) {
-                        anchorIndex = currentIndex;
+                    if (targetIndex === -1 && cleanTarget !== "") {
+                        if (fname === focusName || fname === fullTarget || window.getCleanName(fname) === fullTarget || window.getCleanBaseName(fname) === cleanTarget) {
+                            targetIndex = currentIndex;
+                        }
                     }
                 }
             }
         }
 
         let isIdentical = (displayModel.count === newItems.length);
-        if (isIdentical) {
-            for (let i = 0; i < newItems.length; i++) {
-                if (displayModel.get(i).fileName !== newItems[i].fileName ||
-                    displayModel.get(i).fileUrl !== newItems[i].fileUrl ||
-                    displayModel.get(i).posterUrl !== newItems[i].posterUrl ||
-                    displayModel.get(i).bucket !== newItems[i].bucket) {
-                    isIdentical = false;
-                    break;
+        if (isIdentical && newItems.length > 0) {
+            let mid = Math.floor(newItems.length / 2);
+            let last = newItems.length - 1;
+            let d0 = displayModel.get(0);
+            let dMid = displayModel.get(mid);
+            let dLast = displayModel.get(last);
+            if (!d0 || !dMid || !dLast ||
+                d0.fileName !== newItems[0].fileName ||
+                d0.posterUrl !== newItems[0].posterUrl ||
+                dMid.fileName !== newItems[mid].fileName ||
+                dLast.fileName !== newItems[last].fileName) {
+                isIdentical = false;
+            } else {
+                for (let i = 0; i < newItems.length; i++) {
+                    let d = displayModel.get(i);
+                    if (!d ||
+                        d.fileName !== newItems[i].fileName ||
+                        d.fileUrl !== newItems[i].fileUrl ||
+                        d.posterUrl !== newItems[i].posterUrl ||
+                        d.bucket !== newItems[i].bucket) {
+                        isIdentical = false;
+                        break;
+                    }
                 }
             }
         }
@@ -1243,10 +1393,12 @@ Item {
             window.updateVisibleCount();
         }
 
+        window._lastFilterApplied = window.currentFilter;
+        window._lastProxyVersion = window.cacheVersion;
+
         let indexToFocus = targetIndex !== -1 ? targetIndex : (window.jumpToLastOnFilterChange && lastValidIndex !== -1 ? lastValidIndex : (displayModel.count > 0 ? (view.currentIndex >= 0 && view.currentIndex < displayModel.count ? view.currentIndex : 0) : -1));
         window.jumpToLastOnFilterChange = false;
 
-        let localModes = ["Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Monochrome"];
         if (localModes.indexOf(window.currentFilter) !== -1 && anchorIndex !== -1 && targetIndex === -1 && forceSnap) {
              indexToFocus = anchorIndex;
         }
@@ -1254,7 +1406,9 @@ Item {
         if (indexToFocus !== -1 && displayModel.count > 0) {
             view.currentIndex = indexToFocus;
             if (forceSnap) {
-                view.forceLayout();
+                if (!isIdentical) {
+                    view.forceLayout();
+                }
                 view.positionViewAtIndex(indexToFocus, ListView.Center);
             }
 
@@ -1262,11 +1416,10 @@ Item {
                 window.initialFocusSet = true;
             }
 
-            let localAnchorModes = ["All", "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Monochrome"];
-            if (indexToFocus >= 0 && indexToFocus < displayModel.count && localAnchorModes.indexOf(window.currentFilter) !== -1) {
+            if (indexToFocus >= 0 && indexToFocus < displayModel.count && localModes.indexOf(window.currentFilter) !== -1) {
                 let bucket = displayModel.get(indexToFocus).bucket || "All";
                 if (indexToFocus === 0) bucket = "All";
-                if (window.currentFilter !== bucket && localAnchorModes.indexOf(bucket) !== -1) {
+                if (window.currentFilter !== bucket && localModes.indexOf(bucket) !== -1) {
                     window._silentFilterChange = true;
                     window.currentFilter = bucket;
                     window._silentFilterChange = false;
@@ -2060,6 +2213,7 @@ Item {
                     onTextEdited: function(newText) {
                         window.hasSearched = false;
                         searchState.searched = false;
+                        searchState.save();
                     }
 
                     onAccepted: function(finalText) {
@@ -2111,15 +2265,7 @@ Item {
     Component.onCompleted: {
         Quickshell.execDetached(["bash", "-c", "mkdir -p '" + decodeURIComponent(window.searchDir.replace("file://", "")) + "'"]);
 
-        if (searchState.searched) {
-            searchInput.text = searchState.query;
-            window.searchQuery = searchState.query;
-            window.hasSearched = true;
-            window.lastSearchName = searchState.lastName;
-            window.searchSessionId = searchState.sessionId;
-            window.isSearchPaused = true;
-        }
-
+        searchStateReader.running = true;
         indexDiskReader.running = true;
         window.syncFromSrcModel();
         window.triggerIndexer();

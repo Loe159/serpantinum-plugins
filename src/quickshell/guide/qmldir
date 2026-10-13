@@ -1,1 +1,6 @@
-BarTabBase 1.0 BarTabBase.qml
+GuidePopup 1.0 GuidePopup.qml
+GuideSidebar 1.0 GuideSidebar.qml
+GuideSearchResults 1.0 GuideSearchResults.qml
+GuideContent 1.0 GuideContent.qml
+PluginsTab 1.0 PluginsTab.qml
+PluginSettingsTab 1.0 PluginSettingsTab.qml

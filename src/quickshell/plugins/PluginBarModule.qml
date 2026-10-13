@@ -23,7 +23,10 @@ Rectangle {
     readonly property bool compact: isGrouped || (isSolid && distinctPills)
     readonly property bool hovered: hoverHandler.hovered
     readonly property bool isBottomBar: barWindow ? barWindow.barPosition === "bottom" : false
-    readonly property string barSection: PluginManager.barModuleSection(moduleId)
+    readonly property string barSection: {
+        const currentConfig = PluginManager.configRevision;
+        return PluginManager.barModuleSection(moduleId);
+    }
 
     function s(value) {
         return barWindow && typeof barWindow.s === "function" ? barWindow.s(value) : Scaler.s(value);

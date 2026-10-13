@@ -39,7 +39,10 @@
       "display_widgets": "Widgets",
       "display_general": "Geral",
       "osd": "Exibição na tela",
-      "dock": "Dock"
+      "dock": "Dock",
+      "bar_general": "Geral",
+      "bar_modules": "Módulos",
+      "bar_side_modules": "Módulos laterais"
     },
     "launcher": {
       "position": {
@@ -145,23 +148,24 @@
       },
       "dim": {
         "title": "Escurecer tela",
-        "desc": "Tempo antes de escurecer a saída"
+        "desc": "Reduzir o brilho da tela antes de bloquear"
       },
       "dpms": {
         "title": "Desligar tela (DPMS)",
-        "desc": "Tempo antes de apagar a tela por completo"
+        "desc": "Desligar o sinal de vídeo do monitor"
       },
       "lock": {
         "title": "Bloquear sessão",
-        "desc": "Tempo antes de exigir senha"
+        "desc": "Bloquear a sessão após um período de inatividade"
       },
       "suspend": {
         "title": "Suspender sistema",
-        "desc": "Tempo antes de colocar a máquina pra dormir"
+        "desc": "Suspender o sistema para o modo de suspensão"
       },
       "hooks": {
         "title": "Hooks (comandos shell)"
-      }
+      },
+      "custom_action_desc": "Ação e comando personalizados por tempo limite"
     },
     "welcome": {
       "by_author": "por @{author}",
@@ -268,14 +272,24 @@
         "save_preset": {
           "title": "Salvar predefinição"
         },
-        "preset_name_placeholder": "Digite o nome da predefinição..."
+        "preset_name_placeholder": "Digite o nome da predefinição...",
+        "screen_desc": "Configurar e editar widgets da área de trabalho"
       }
     },
     "bar": {
       "modules": {
         "vis": "Visualizador (cava)",
         "actions": "Ações",
-        "workspaces": "Workspaces",
+        "workspaces": {
+          "style": {
+            "name": {
+              "pills": "Pílulas",
+              "numbers": "Números",
+              "pacman": "Pacman"
+            }
+          },
+          "name": "Espaços de trabalho"
+        },
         "media": "Mídia",
         "tray": "Bandeja",
         "keyboard": "Teclado",
@@ -285,7 +299,16 @@
         "battery": "Bateria",
         "focus": "Foco",
         "sysmon": "Monitor do sistema",
-        "timedate": "Hora/data",
+        "timedate": {
+          "name": "Hora e data",
+          "style": {
+            "name": {
+              "classic": "Clássico",
+              "material": "Material",
+              "badge": "Matriz de pontos"
+            }
+          }
+        },
         "info": "Gravação/timer",
         "weather": "Clima"
       },
@@ -304,7 +327,15 @@
       "workspaces": {
         "title": "Quantidade de workspaces a exibir",
         "disc": "Nota: isto não afeta a quantidade real de workspaces no compositor",
-        "desc": "Número de workspaces a exibir"
+        "desc": "Número de workspaces a exibir",
+        "hide_empty": {
+          "title": "Ocultar áreas de trabalho vazias",
+          "desc": "Mostrar apenas as áreas ocupadas e a ativa"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha o estilo visual para os indicadores de áreas de trabalho"
+        }
       },
       "opacity": {
         "title": "Opacidade da barra",
@@ -345,6 +376,159 @@
       "distinct_pills": {
         "title": "Estilo modular e compacto para widgets",
         "desc": "Dá aos módulos da barra um contorno retangular e reduz o tamanho pro visual modular"
+      },
+      "timedate": {
+        "show_date": {
+          "title": "Mostrar data",
+          "desc": "Exibir o texto da data ao lado do relógio"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha o estilo visual para o relógio e a data"
+        }
+      },
+      "vis": {
+        "bars": {
+          "title": "Quantidade de barras",
+          "desc": "Número de barras de frequência a exibir"
+        },
+        "alignment": {
+          "title": "Alinhamento",
+          "desc": "Centralizar o visualizador ou alinhar ao topo ou à base"
+        },
+        "align": {
+          "center": "Centro",
+          "top": "Topo",
+          "bottom": "Base",
+          "left": "Esquerda",
+          "right": "Direita"
+        },
+        "continuous": {
+          "title": "Onda contínua",
+          "desc": "Exibir uma onda suave em vez de barras discretas"
+        }
+      },
+      "sysmon": {
+        "style": {
+          "title": "Estilo do círculo",
+          "desc": "Aparência visual dos anéis de progresso",
+          "wave": "Onda",
+          "circle": "Círculo"
+        },
+        "cpu": {
+          "title": "Uso da CPU",
+          "desc": "Exibir o anel de utilização do processador"
+        },
+        "ram": {
+          "title": "Uso de memória",
+          "desc": "Exibir o anel de utilização de memória (RAM)"
+        },
+        "temp": {
+          "title": "Temperatura",
+          "desc": "Exibir o anel de temperatura do sistema"
+        },
+        "disk": {
+          "title": "Uso do disco",
+          "desc": "Exibir o anel de utilização do disco"
+        }
+      },
+      "bat": {
+        "show_percent": {
+          "title": "Mostrar porcentagem",
+          "desc": "Exibe a porcentagem numérica de carga da bateria"
+        },
+        "show_icon": {
+          "title": "Mostrar ícone",
+          "desc": "Exibe o ícone da bateria ou indicador gráfico"
+        },
+        "style": {
+          "title": "Estilo da bateria",
+          "desc": "Escolha a aparência visual do indicador de bateria",
+          "name": {
+            "classic": "Clássico",
+            "minimal": "Minimalista",
+            "text": "Texto"
+          },
+          "classic": "Pílula com onda gradiente",
+          "minimal": "Cápsula estilo iOS/Android com tampa",
+          "text": "Texto e ícone limpos sem fundo"
+        }
+      },
+      "wifi": {
+        "show_icon": {
+          "title": "Mostrar ícone",
+          "desc": "Exibe o ícone da rede ou indicador de sinal"
+        },
+        "show_name": {
+          "title": "Mostrar nome",
+          "desc": "Exibe o SSID da rede ou status da conexão"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha a aparência visual do módulo de rede",
+          "name": {
+            "button": "Botão",
+            "text": "Texto"
+          },
+          "button": "Botão interativo com fundo",
+          "text": "Texto e ícone limpos sem fundo"
+        }
+      },
+      "bt": {
+        "show_icon": {
+          "title": "Mostrar ícone",
+          "desc": "Exibe o ícone de status do Bluetooth"
+        },
+        "show_name": {
+          "title": "Mostrar nome",
+          "desc": "Exibe o nome do dispositivo Bluetooth conectado"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha a aparência visual do módulo Bluetooth",
+          "name": {
+            "button": "Botão",
+            "text": "Texto"
+          },
+          "button": "Botão interativo com fundo",
+          "text": "Texto e ícone limpos sem fundo"
+        }
+      },
+      "vol": {
+        "show_icon": {
+          "title": "Mostrar ícone",
+          "desc": "Exibe o ícone de alto-falante de volume"
+        },
+        "show_percent": {
+          "title": "Mostrar porcentagem",
+          "desc": "Exibe a porcentagem numérica de volume"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha a aparência visual do módulo de volume",
+          "name": {
+            "button": "Botão",
+            "text": "Texto"
+          },
+          "button": "Botão interativo com fundo",
+          "text": "Texto e ícone limpos sem fundo"
+        }
+      },
+      "kb": {
+        "show_icon": {
+          "title": "Mostrar ícone",
+          "desc": "Exibe o ícone de layout do teclado"
+        },
+        "style": {
+          "title": "Estilo",
+          "desc": "Escolha a aparência visual do módulo de teclado",
+          "name": {
+            "button": "Botão",
+            "text": "Texto"
+          },
+          "button": "Botão interativo com fundo",
+          "text": "Texto e ícone limpos sem fundo"
+        }
       }
     },
     "theme": {
@@ -368,7 +552,8 @@
         "desc": "Pasta onde buscar papéis de parede",
         "select_dir": "Selecionar pasta...",
         "select_wallpaper": "Selecionar papel de parede",
-        "no_wallpaper_selected": "Nenhum papel de parede selecionado"
+        "no_wallpaper_selected": "Nenhum papel de parede selecionado",
+        "select": "Papel de parede"
       }
     },
     "file_picker": {
@@ -380,8 +565,11 @@
       "places": {
         "home": "Início",
         "downloads": "Downloads",
-        "pictures": "Imagens"
-      }
+        "pictures": "Imagens",
+        "music": "Música",
+        "documents": "Documentos"
+      },
+      "done": "Concluir"
     },
     "font_picker": {
       "title": "Selecione uma fonte",
@@ -605,7 +793,44 @@
       "on_top": {
         "title": "Colocar a dock sobre as janelas",
         "desc": "Manter a dock visível sobre as janelas de aplicativos"
+      },
+      "smart_autohide": {
+        "title": "Ocultação automática inteligente",
+        "desc": "Ocultar a dock apenas quando houver janelas abertas, mantendo-a visível na área de trabalho"
+      },
+      "focus_running": {
+        "title": "Focar janela existente",
+        "desc": "Clicar no ícone de um aplicativo ativa sua janela aberta em vez de iniciar uma nova instância"
+      },
+      "show_running_indicators": {
+        "title": "Indicadores de execução",
+        "desc": "Mostrar indicadores de ponto ou barra nos ícones de aplicativos abertos"
+      },
+      "show_running_apps": {
+        "title": "Mostrar aplicativos abertos",
+        "desc": "Exibir aplicativos abertos não fixados na dock"
+      },
+      "running_scope": {
+        "title": "Escopo de janelas ativas",
+        "desc": "Filtrar janelas em execução exibidas e controladas pela dock",
+        "auto": "Automático (padrão do compositor)",
+        "all": "Todos os workspaces e monitores",
+        "output": "Apenas monitor atual",
+        "workspace": "Apenas workspace ativo"
+      },
+      "window_menu": {
+        "untitled": "Untitled"
       }
+    },
+    "lyrics_picker": {
+      "title": "Selecionar arquivo de letras",
+      "no_lyrics_selected": "Nenhum arquivo de letras selecionado"
+    },
+    "settings": "Configurações",
+    "search": {
+      "placeholder": "Pesquisar configurações...",
+      "prompt": "Digite para pesquisar configurações...",
+      "no_results": "Nenhuma configuração encontrada"
     }
   },
   "sysnotif": {
@@ -636,7 +861,12 @@
   },
   "applauncher": {
     "search": "Pesquisar",
-    "placeholder": "Comece com > para um comando..."
+    "placeholder": "Comece com > para um comando...",
+    "tab_applications": "Aplicativos",
+    "tab_files": "Arquivos",
+    "placeholder_files": "Buscar arquivos ou digitar caminho...",
+    "tab_emojis": "Emojis",
+    "placeholder_emojis": "Buscar emojis ou digitar palavra-chave..."
   },
   "calendar": {
     "loading": "Carregando...",
@@ -705,7 +935,11 @@
       "jazz": "Jazz",
       "classic": "Clássica",
       "custom": "Personalizado"
-    }
+    },
+    "searching_lyrics": "Procurando letra...",
+    "no_lyrics": "Nenhuma letra encontrada",
+    "select_local_file": "Selecionar um arquivo local",
+    "lyrics": "Letra"
   },
   "network": {
     "tabs": {
@@ -794,6 +1028,46 @@
         "pomo_skipped_focus_body": "Sessão de foco pulada. Indo para a pausa.",
         "pomo_skipped_break_body": "Pausa pulada. De volta ao foco."
       }
+    },
+    "draw": {
+      "notification": {
+        "app_name": "DrawAction",
+        "saved_title": "Desenho salvo",
+        "copied_title": "Desenho copiado",
+        "copied_body": "Desenho copiado para a área de transferência",
+        "failed_title": "Falha na exportação",
+        "failed_body": "Não foi possível salvar o desenho"
+      }
+    },
+    "notes": {
+      "title": "Notas",
+      "add_note": "Adicionar nota",
+      "new_note_title": "Nova nota",
+      "edit_note": "Editar",
+      "preview_note": "Pré-visualizar markdown",
+      "delete_selected": "Eliminar selecionadas ({count})",
+      "no_notes": "Nenhuma nota ainda. Clique em «Adicionar nota».",
+      "search_placeholder": "Pesquisar notas...",
+      "title_placeholder": "Título da nota...",
+      "content_placeholder": "Conteúdo da nota em markdown...",
+      "back": "Voltar",
+      "save": "Concluído",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "select_all": "Selecionar tudo",
+      "deselect_all": "Desmarcar tudo",
+      "selected_count": "{count} selecionadas",
+      "pinned": "Fixados",
+      "recent": "Recentes",
+      "pin": "Fixar",
+      "unpin": "Desafixar"
+    },
+    "tabs": {
+      "draw": "Desenho",
+      "system": "Sistema",
+      "timer": "Temporizador",
+      "notes": "Notas",
+      "tab": "Aba"
     }
   },
   "screenshot": {
@@ -989,7 +1263,9 @@
       "visualizer": "Visualizador",
       "user": "Usuário",
       "usage": "Uso",
-      "battery": "Bateria"
+      "battery": "Bateria",
+      "github": "Github",
+      "time": "Hora"
     },
     "variants": {
       "digital": "Digital",
@@ -1002,7 +1278,12 @@
       "rounded": "Arredondado",
       "bars": "Barras",
       "continuous": "Contínuo",
-      "default": "Padrão"
+      "default": "Padrão",
+      "material": "Material",
+      "materialAnalog": "Material analógico",
+      "lumen": "Lúmen",
+      "lyrics": "Letra",
+      "simpleLyrics": "Letra simples"
     },
     "presets": {
       "minimal": {
@@ -1017,6 +1298,26 @@
         "name": "Painel",
         "desc": "Monitor de sistema completo com relógio digital, uso de hardware e nível de bateria."
       }
+    },
+    "github": {
+      "set_user": "Definir usuário",
+      "error": "Erro",
+      "commit": "commit",
+      "commits": "commits",
+      "no_day_selected": "Nenhum dia selecionado",
+      "fetching": "Buscando contribuições do GitHub...",
+      "fetch_error": "Não foi possível carregar o usuário @{user}",
+      "enter_username": "Digite um nome de usuário do GitHub",
+      "no_contributions": "Nenhuma contribuição encontrada"
+    },
+    "settings": {
+      "lyricsLines": "Linhas",
+      "lyricsAlignment": "Alinhamento"
+    },
+    "align": {
+      "left": "Esquerda",
+      "center": "Centro",
+      "right": "Direita"
     }
   },
   "cli": {
