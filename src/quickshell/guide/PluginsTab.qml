@@ -236,14 +236,8 @@ Item {
                                 const dummy = pluginsRoot.configRevision;
                                 return PluginManager.isEnabled(pluginData);
                             }
-                            property bool topbarSupported: PluginManager.supportsTopbar(pluginData)
-                            property bool topbarEnabled: {
-                                const dummy = pluginsRoot.configRevision;
-                                return PluginManager.isTopbarEnabled(pluginData);
-                            }
-
                             Layout.fillWidth: true
-                            implicitHeight: topbarSupported ? rootObj.s(116) : rootObj.s(86)
+                            implicitHeight: rootObj.s(86)
                             radius: ThemeBackend.borderRadius
                             color: pluginMouse.hovered
                                 ? Qt.alpha(ThemeBackend.surface1, 0.62)
@@ -392,39 +386,6 @@ Item {
                                     }
                                 }
 
-                                RowLayout {
-                                    visible: pluginCard.topbarSupported
-                                    Layout.fillWidth: true
-                                    Layout.leftMargin: rootObj.s(54)
-                                    spacing: rootObj.s(8)
-
-                                    Text {
-                                        text: "󰍜"
-                                        font.family: "Iosevka Nerd Font"
-                                        font.pixelSize: rootObj.s(13)
-                                        color: ThemeBackend.blue
-                                    }
-
-                                    Text {
-                                        text: "Show in top bar"
-                                        font.family: ThemeBackend.fontFamily
-                                        font.pixelSize: rootObj.s(11)
-                                        font.weight: Font.Bold
-                                        color: pluginCard.pluginEnabled ? ThemeBackend.subtext1 : ThemeBackend.overlay0
-                                    }
-
-                                    Item { Layout.fillWidth: true }
-
-                                    Toggle {
-                                        checked: pluginCard.topbarEnabled
-                                        enabled: pluginCard.pluginEnabled
-                                        accentColor: ThemeBackend.blue
-                                        baseColor: ThemeBackend.surface1
-                                        handleColor: ThemeBackend.crust
-                                        handleOffColor: ThemeBackend.overlay1
-                                        onToggled: checked => PluginManager.setTopbarEnabled(pluginCard.pluginData.id, checked)
-                                    }
-                                }
                             }
                         }
                     }
