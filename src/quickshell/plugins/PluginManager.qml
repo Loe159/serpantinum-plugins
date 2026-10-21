@@ -33,6 +33,8 @@ Item {
     property string lastError: ""
 
     property bool installing: false
+    property bool updating: false
+    property string updateMessage: ""
     property bool installSucceeded: false
     property string installMessage: ""
     property string pendingInstallUrl: ""
@@ -106,96 +108,17 @@ Item {
         ].join("\n");
     }
 
-    function installerScript() {
-        return [
-            "import json, pathlib, re, shutil, subprocess, sys, tempfile",
-            "url = sys.argv[1].strip()",
-            "root = pathlib.Path(sys.argv[2]).expanduser()",
-            "host_api = int(sys.argv[3])",
-            "tmp = None",
-            "installed = []",
-            "try:",
-            "    if not url:",
-            "        raise ValueError('Enter a Git repository URL')",
-            "    root.mkdir(parents=True, exist_ok=True)",
-            "    tmp = pathlib.Path(tempfile.mkdtemp(prefix='.plugin-install-', dir=str(root)))",
-            "    repo = tmp / 'repo'",
-            "    proc = subprocess.run(['git', 'clone', '--depth', '1', '--', url, str(repo)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)",
-            "    if proc.returncode != 0:",
-            "        detail = (proc.stderr or proc.stdout or 'git clone failed').strip().splitlines()[-1]",
-            "        raise ValueError(detail)",
-            "    root_manifest = repo / 'plugin.json'",
-            "    if root_manifest.is_file():",
-            "        manifests = [root_manifest]",
-            "    else:",
-            "        manifests = sorted(path / 'plugin.json' for path in repo.iterdir() if path.is_dir() and (path / 'plugin.json').is_file())",
-            "    if not manifests:",
-            "        raise ValueError('No plugin.json found at the repository root or in direct child directories')",
-            "    plugins = []",
-            "    ids = set()",
-            "    destinations = set()",
-            "    for manifest in manifests:",
-            "        data = json.loads(manifest.read_text(encoding='utf-8'))",
-            "        plugin_dir = manifest.parent",
-            "        plugin_id = str(data.get('id') or '').strip()",
-            "        if not plugin_id:",
-            "            raise ValueError(f'{manifest.relative_to(repo)} is missing id')",
-            "        if plugin_id in ids:",
-            "            raise ValueError(f'duplicate plugin id in repository: {plugin_id}')",
-            "        ids.add(plugin_id)",
-            "        api = int(data.get('apiVersion', data.get('api_version', 1)))",
-            "        if api > host_api:",
-            "            raise ValueError(f'{plugin_id} requires API {api}, host provides {host_api}')",
-            "        entry = str(data.get('entry') or 'Plugin.qml')",
-            "        if not (plugin_dir / entry).is_file():",
-            "            raise ValueError(f'{plugin_id}: entry not found: {entry}')",
-            "        bar_entry = str(data.get('barEntry') or '').strip()",
-            "        if bar_entry and not (plugin_dir / bar_entry).is_file():",
-            "            raise ValueError(f'{plugin_id}: bar entry not found: {bar_entry}')",
-            "        settings_entry = str(data.get('settingsEntry') or '').strip()",
-            "        if settings_entry and not (plugin_dir / settings_entry).is_file():",
-            "            raise ValueError(f'{plugin_id}: settings entry not found: {settings_entry}')",
-            "        bar_entries = data.get('barEntries') or []",
-            "        if bar_entries and not isinstance(bar_entries, list):",
-            "            raise ValueError(f'{plugin_id}: barEntries must be an array')",
-            "        seen_bar_ids = set()",
-            "        for item in bar_entries:",
-            "            if not isinstance(item, dict):",
-            "                raise ValueError(f'{plugin_id}: barEntries items must be objects')",
-            "            item_id = str(item.get('id') or '').strip()",
-            "            item_entry = str(item.get('entry') or '').strip()",
-            "            if not item_id or not item_entry:",
-            "                raise ValueError(f'{plugin_id}: barEntries items require id and entry')",
-            "            if item_id in seen_bar_ids:",
-            "                raise ValueError(f'{plugin_id}: duplicate bar entry id: {item_id}')",
-            "            seen_bar_ids.add(item_id)",
-            "            if not (plugin_dir / item_entry).is_file():",
-            "                raise ValueError(f'{plugin_id}: bar entry not found: {item_entry}')",
-            "        dirname = re.sub(r'[^A-Za-z0-9._-]+', '-', plugin_id).strip('-') or 'plugin'",
-            "        dest = root / dirname",
-            "        if dest in destinations:",
-            "            raise ValueError(f'plugin ids map to the same install directory: {dirname}')",
-            "        destinations.add(dest)",
-            "        if dest.exists():",
-            "            raise ValueError(f'{plugin_id} is already installed')",
-            "        plugins.append((plugin_id, plugin_dir, dest))",
-            "    prepared = tmp / 'prepared'",
-            "    prepared.mkdir()",
-            "    for plugin_id, plugin_dir, dest in plugins:",
-            "        staged = prepared / dest.name",
-            "        shutil.copytree(plugin_dir, staged, ignore=shutil.ignore_patterns('.git'))",
-            "    for plugin_id, plugin_dir, dest in plugins:",
-            "        shutil.move(str(prepared / dest.name), str(dest))",
-            "        installed.append(dest)",
-            "    print(json.dumps({'ok': True, 'ids': [plugin[0] for plugin in plugins], 'paths': [str(plugin[2]) for plugin in plugins]}))",
-            "except Exception as exc:",
-            "    for dest in installed:",
-            "        shutil.rmtree(dest, ignore_errors=True)",
-            "    print(json.dumps({'ok': False, 'error': str(exc)}))",
-            "finally:",
-            "    if tmp is not None:",
-            "        shutil.rmtree(tmp, ignore_errors=True)"
-        ].join("\n");
+    // A manual refresh also checks tracked Git repositories for newly added plugins.
+    // Startup and internal refreshes remain local and fast.
+    function refreshFromGit() {
+        if (installing || updating || scanning) return;
+        updating = true;
+        updateMessage = "Checking Git sources…";
+        sourceUpdater.command = [
+            "python3", Caching.qsDir + "/plugins/plugin_repository.py",
+            "refresh", userPluginDir, apiVersion.toString()
+        ];
+        sourceUpdater.running = true;
     }
 
     function refresh() {
@@ -495,7 +418,10 @@ Item {
         installSucceeded = false;
         installMessage = "Cloning plugin…";
         installing = true;
-        installer.command = ["python3", "-c", installerScript(), trimmed, userPluginDir, apiVersion.toString()];
+        installer.command = [
+            "python3", Caching.qsDir + "/plugins/plugin_repository.py",
+            "install", trimmed, userPluginDir, apiVersion.toString()
+        ];
         installer.running = true;
     }
 
@@ -546,6 +472,42 @@ Item {
     }
 
     Process {
+        id: sourceUpdater
+        running: false
+        command: []
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const result = JSON.parse(this.text.trim());
+                    if (!result.ok) {
+                        root.updateMessage = result.error || "Git refresh failed";
+                    } else {
+                        const changes = (result.installed || []).concat(result.updated || []);
+                        const warnings = result.warnings || [];
+                        const skipped = result.skipped || [];
+                        root.updateMessage = changes.length
+                            ? "Synced: " + changes.join(", ")
+                            : "Git plugins already up to date";
+                        if (skipped.length) root.updateMessage += " · Preserved: " + skipped.join(", ");
+                        if (warnings.length) root.updateMessage += " · " + warnings.join(" · ");
+                    }
+                } catch (e) {
+                    root.updateMessage = "Git refresh failed: " + String(e);
+                }
+                root.updating = false;
+                root.refresh();
+            }
+        }
+        onExited: {
+            if (root.updating) {
+                root.updating = false;
+                root.updateMessage = "Git refresh interrupted";
+                root.refresh();
+            }
+        }
+    }
+
+    Process {
         id: installer
         running: false
         command: []
@@ -557,10 +519,14 @@ Item {
                     const result = JSON.parse(raw);
                     if (result.ok) {
                         root.installSucceeded = true;
-                        const ids = Array.isArray(result.ids) ? result.ids : (result.id ? [result.id] : []);
-                        root.installMessage = ids.length === 1
-                            ? "Installed " + ids[0]
-                            : "Installed " + ids.length + " plugins: " + ids.join(", ");
+                        const installed = result.installed || [];
+                        const updated = result.updated || [];
+                        const skipped = result.skipped || [];
+                        const parts = [];
+                        if (installed.length) parts.push("Installed: " + installed.join(", "));
+                        if (updated.length) parts.push("Updated: " + updated.join(", "));
+                        if (skipped.length) parts.push("Already present (unchanged): " + skipped.join(", "));
+                        root.installMessage = parts.length ? parts.join(" · ") : "Plugins already up to date";
                         root.installFinished(true, root.installMessage);
                         root.refresh();
                     } else {
