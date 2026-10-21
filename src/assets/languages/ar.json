@@ -32,6 +32,7 @@
   "cli": {
     "commands": "الأوامر:",
     "daemon_stopped": "تم إيقاف خدمة خلفية Serpantinum.",
+    "daemon_restarted": "تمت إعادة تشغيل خدمة خلفية Serpantinum.",
     "description": "واجهة سطح مكتب عصرية لمديري نوافذ Wayland.",
     "error_missing_qml": "خطأ: لم يتم تحديد هدف للتشغيل.",
     "error_qml_not_found": "ملف QML غير موجود: '{NAME}' في '{DIR}'",
@@ -46,6 +47,7 @@
       "usage": "الاستخدام: serpantinum ipc call <هدف> <دالة> [وسائط...]"
     },
     "kill_desc": "إيقاف خدمة الخلفية قيد التشغيل بشكل نظيف",
+    "restart_desc": "إعادة تشغيل خدمة الخلفية",
     "launch_desc": "تشغيل مكونات مستقلة (start، widgetredactor)",
     "launch_help": {
       "available_targets": "الأهداف المتاحة:",
@@ -301,10 +303,6 @@
           }
         }
       },
-      "opacity": {
-        "desc": "تعيين شفافية الشريط كنسبة مئوية",
-        "title": "شفافية الشريط"
-      },
       "position": {
         "bottom": "أسفل",
         "desc": "موقع رسو الشريط على شاشتك",
@@ -407,6 +405,11 @@
         "desc": "تحديد عرض الشريط كنسبة مئوية من حجم الشاشة",
         "title": "عرض الشريط"
       },
+      "center_by_edges": {
+        "title": "التوسيط حسب الحواف",
+        "desc": "الحفاظ على هوامش متساوية على الحافتين اليسرى واليمنى للشريط بدلاً من التوسيط حسب الوحدة الوسطى",
+        "desc_vertical": "الحفاظ على هوامش متساوية على الحافتين العلوية والسفلية للشريط بدلاً من التوسيط حسب الوحدة الوسطى"
+      },
       "wifi": {
         "show_icon": {
           "desc": "عرض أيقونة الشبكة أو إشارة الاتصال",
@@ -439,6 +442,54 @@
           "title": "النمط"
         },
         "title": "اختر عدد مساحات العمل المعروضة"
+      },
+      "media": {
+        "info_mode": {
+          "title": "Secondary info",
+          "desc": "Choose whether to show the song duration or its author",
+          "duration": "Duration",
+          "author": "Author"
+        },
+        "width": {
+          "title": "Width",
+          "desc": "Width of the song title area"
+        },
+        "show_icon": {
+          "title": "عرض الأيقونة",
+          "desc": "عرض غلاف الألبوم أو أيقونة الموسيقى"
+        },
+        "show_controls": {
+          "title": "عرض عناصر التحكم",
+          "desc": "عرض أزرار السابق والتشغيل والتالي"
+        },
+        "preview": {
+          "title": "عنوان الأغنية",
+          "author": "Song author"
+        }
+      },
+      "thickness": {
+        "title": "سماكة الشريط",
+        "desc": "غيّر سماكة الشريط وستتكيف الوحدات معها"
+      },
+      "menu": {
+        "show_settings": {
+          "title": "إظهار أيقونة الإعدادات",
+          "desc": "عرض الزر الذي يفتح الإعدادات"
+        },
+        "show_launcher": {
+          "title": "إظهار أيقونة المشغّل",
+          "desc": "عرض زر البحث الذي يفتح المشغّل"
+        },
+        "style": {
+          "title": "النمط",
+          "desc": "اختر المظهر المرئي لوحدة القائمة",
+          "name": {
+            "button": "زر",
+            "icon": "أيقونة"
+          },
+          "button": "أزرار أيقونات تفاعلية مع خلفية",
+          "icon": "أيقونات نظيفة بدون خلفية"
+        }
       }
     },
     "common": {
@@ -484,6 +535,36 @@
         },
         "screen_desc": "تكوين وتعديل أدوات سطح المكتب",
         "title": "أدوات سطح المكتب"
+      },
+      "lockscreen": {
+        "edit": {
+          "title": "شاشة القفل",
+          "desc": "خصّص تخطيط شاشة القفل",
+          "button": "تعديل شاشة القفل"
+        },
+        "limits": {
+          "title": "حدود المحاولات",
+          "desc": "حظر إدخال كلمة المرور مؤقتًا وتعطيل قارئ البصمة بعد عدد كبير من المحاولات الفاشلة"
+        },
+        "password_attempts": {
+          "title": "محاولات كلمة المرور",
+          "desc": "المحاولات الفاشلة قبل حظر إدخال كلمة المرور لمدة 30 ثانية"
+        },
+        "fingerprint_attempts": {
+          "title": "محاولات البصمة",
+          "desc": "عمليات المسح الفاشلة قبل تعطيل قارئ البصمة حتى عملية الفتح التالية"
+        },
+        "fingerprint": {
+          "title": "تفعيل تسجيل الدخول بالبصمة",
+          "desc": "السماح بفتح شاشة القفل باستخدام البصمة"
+        },
+        "background": {
+          "select": "اختيار الخلفية",
+          "follow": "اتباع الخلفية",
+          "custom": "مخصص",
+          "follows_hint": "يتبع الخلفية",
+          "none": "لم يتم اختيار خلفية"
+        }
       }
     },
     "dock": {
@@ -527,10 +608,6 @@
       "on_top": {
         "desc": "إبقاء الرصيف ظاهرًا فوق نوافذ التطبيقات",
         "title": "وضع الرصيف فوق النوافذ"
-      },
-      "opacity": {
-        "desc": "شفافية خلفية الرصيف كنسبة مئوية",
-        "title": "شفافية الرصيف"
       },
       "override_bounds": {
         "desc": "الحفاظ على الحجم المخصص للعناصر حتى وإن تجاوز الرصيف حدود الشاشة",
@@ -595,6 +672,10 @@
       },
       "window_menu": {
         "untitled": "Untitled"
+      },
+      "background": {
+        "title": "رسم خلفية خلف التطبيقات",
+        "desc": "إظهار لوحة الشريط خلف أيقونات التطبيقات"
       }
     },
     "file_picker": {
@@ -739,6 +820,10 @@
         "desc": "المهلة الزمنية والأمر التحذيري قبل تنفيذ الإجراء",
         "placeholder": "مثال: notify-send 'تحذير خمول'",
         "title": "أمر التحذير"
+      },
+      "lock_on_sleep": {
+        "title": "القفل قبل السكون",
+        "desc": "قفل الجلسة قبل تعليق النظام، مثل عند إغلاق الغطاء"
       }
     },
     "launcher": {
@@ -781,6 +866,10 @@
       "empty_graphic": {
         "desc": "عرض رسم القطة النائمة في مركز الإشعارات عندما يكون فارغًا",
         "title": "حركة المركز الفارغ"
+      },
+      "right_click_close": {
+        "title": "الإغلاق بالنقر الأيمن",
+        "desc": "إغلاق الإشعار بالنقر عليه بزر الماوس الأيمن"
       },
       "position": {
         "bottom_center": "أسفل الوسط",
@@ -874,7 +963,8 @@
       "tutorial": "التعليمات التوجيهية",
       "update": "التحديثات",
       "welcome": "مرحبًا بك",
-      "wellbeing": "الرفاهية الرقمية"
+      "wellbeing": "الرفاهية الرقمية",
+      "display_lockscreen": "شاشة القفل"
     },
     "theme": {
       "colors": {
@@ -899,6 +989,18 @@
         "select_dir": "اختر مجلدًا...",
         "select_wallpaper": "اختر الخلفية",
         "title": "مجلد الخلفيات"
+      },
+      "element_opacity": {
+        "title": "شفافية العناصر",
+        "desc": "شفافية الشريط واللوحة والأدوات وكل عنصر آخر في الواجهة"
+      },
+      "blur_background": {
+        "title": "إضافة خلفية ضبابية لورق الجدران",
+        "desc": "تمويه ورق الجدران خلف كل عنصر يستخدم الشفافية",
+        "style": {
+          "blur": "تمويه",
+          "liquid": "زجاج سائل"
+        }
       }
     },
     "theme_editor": {
@@ -1009,7 +1111,11 @@
     "deploy": {
       "configuring_sddm": "جارٍ تكوين مدير الجلسات SDDM...",
       "disabling_dm": "جارٍ تعطيل مدير تسجيل الدخول السابق ({dm})...",
-      "sddm_success": "-> تم تثبيت مظهر SDDM Material You وتمكين الخدمة [ تم بنجاح ]"
+      "sddm_success": "-> تم تثبيت مظهر SDDM Material You وتمكين الخدمة [ تم بنجاح ]",
+      "sddm_no_wayland_compositor": "لم يتم العثور على مركّب Wayland مدعوم لشاشة تسجيل الدخول (kwin_wayland/weston)، سيتم استخدام X11 لـ SDDM.",
+      "sddm_no_xorg": "لم يتم العثور على Xorg، سيتم استخدام {compositor} لـ SDDM.",
+      "sddm_no_backend": "لم يتم العثور على Xorg ولا على مركّب Wayland مدعوم لشاشة تسجيل الدخول (kwin_wayland/weston) في /usr/local/bin أو /usr/bin أو /bin.",
+      "sddm_skipped": "تم تخطي إعداد SDDM: لم يتم العثور على خادم عرض أو مركّب لشاشة تسجيل الدخول صالح للاستخدام. لم يتم تغيير مدير العرض الحالي."
     },
     "deps": {
       "all_installed": "-> جميع الحزم مثبتة بالفعل! تخطي مرحلة تنزيل الحزم.",
@@ -1097,13 +1203,85 @@
       "enter_pin": "أدخل رمز PIN",
       "locked": "مقفل"
     },
-    "unknown": "غير معروف"
+    "fingerprint": {
+      "ready": "المس المستشعر",
+      "not_recognized": "لم يتم التعرف على البصمة",
+      "recognized": "تم التعرف على البصمة"
+    },
+    "unknown": "غير معروف",
+    "redactor": {
+      "done": "تم",
+      "element": {
+        "avatar": "الصورة الرمزية",
+        "user": "المستخدم",
+        "password": "كلمة المرور",
+        "fingerprint": "بصمة الإصبع",
+        "notifications": "الإشعارات",
+        "clock": "الساعة",
+        "lockstatus": "حالة القفل",
+        "keyboard": "لوحة المفاتيح",
+        "battery": "البطارية"
+      },
+      "variant": {
+        "avatar": {
+          "round": "دائري",
+          "rounded": "مستدير الحواف"
+        },
+        "user": {
+          "filled": "معبأ",
+          "plain": "بسيط"
+        },
+        "password": {
+          "filled": "معبأ",
+          "glass": "زجاجي"
+        },
+        "fingerprint": {
+          "classic": "كلاسيكي",
+          "ring": "حلقة",
+          "scanner": "ماسح",
+          "pulse": "نبض",
+          "orbit": "مدار",
+          "liquid": "سائل"
+        },
+        "notifications": {
+          "card": "بطاقة",
+          "plain": "بسيط"
+        },
+        "lockstatus": {
+          "filled": "معبأ",
+          "plain": "بسيط"
+        }
+      },
+      "setting": {
+        "show_text": "إظهار النص"
+      }
+    }
   },
   "music": {
     "by_artist": "بواسطة {artist}",
     "eq": {
       "apply": "تطبيق",
       "saved": "تم الحفظ"
+    },
+    "audio": {
+      "title": "الصوت",
+      "balance": "توازن القنوات",
+      "reset": "إعادة ضبط",
+      "centered": "متوازن",
+      "left_slightly_favored": "تفضيل طفيف لليسار",
+      "right_slightly_favored": "تفضيل طفيف لليمين",
+      "left_only": "اليسار فقط",
+      "right_only": "اليمين فقط",
+      "left_favored": "تفضيل اليسار",
+      "right_favored": "تفضيل اليمين",
+      "test": "اختبار",
+      "stop_test": "إيقاف",
+      "mono": "صوت أحادي",
+      "swap": "تبديل اليسار/اليمين",
+      "dynamic_range": "النطاق الديناميكي",
+      "off": "إيقاف",
+      "balanced": "متوازن",
+      "night": "ليلي"
     },
     "equalizer": "معادل الصوت",
     "loading": "جارٍ التحميل...",
@@ -1131,7 +1309,8 @@
   "network": {
     "actions": {
       "scan": "بحث",
-      "unpair": "إلغاء الاقتران"
+      "unpair": "إلغاء الاقتران",
+      "sign_in": "تسجيل الدخول"
     },
     "status": {
       "calculating": "جارٍ الحساب...",
@@ -1224,9 +1403,31 @@
       "ram": "الذاكرة",
       "temp": "الحرارة"
     },
+    "calculator": {
+      "history": "السجل",
+      "no_history": "لا توجد عمليات حسابية بعد",
+      "clear_history": "مسح السجل",
+      "copied": "تم النسخ",
+      "deg": "درجة",
+      "rad": "راد",
+      "grad": "جراد",
+      "inv": "عكسي",
+      "mode": {
+        "normal": "عادي",
+        "advanced": "متقدم"
+      },
+      "clear": "AC",
+      "error": {
+        "syntax": "تعبير غير صالح",
+        "div0": "لا يمكن القسمة على صفر",
+        "domain": "إدخال غير صالح",
+        "paste": "لصق غير صالح"
+      }
+    },
     "tabs": {
       "draw": "رسم",
       "notes": "ملاحظات",
+      "calculator": "الآلة الحاسبة",
       "system": "النظام",
       "tab": "علامة تبويب",
       "timer": "المؤقت"
@@ -1537,6 +1738,8 @@
       "default": "افتراضي",
       "digital": "رقمي",
       "full": "كامل",
+      "lockscreen": "Lockscreen",
+      "stretched": "Stretched",
       "lumen": "لومن",
       "lyrics": "كلمات الأغاني",
       "material": "ماتيريال",

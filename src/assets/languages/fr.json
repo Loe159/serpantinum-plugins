@@ -44,7 +44,8 @@
       "bar_modules": "Modules",
       "bar_side_modules": "Modules latéraux",
       "plugins": "Plugins",
-      "plugins_overview": "Vue d'ensemble"
+      "plugins_overview": "Vue d'ensemble",
+      "display_lockscreen": "Écran de verrouillage"
     },
     "launcher": {
       "position": {
@@ -102,6 +103,10 @@
       "empty_graphic": {
         "title": "Animation du centre vide",
         "desc": "Afficher l'animation du chat qui dort dans le centre de notifications lorsqu'il est vide"
+      },
+      "right_click_close": {
+        "title": "Fermer avec le clic droit",
+        "desc": "Fermer une notification avec un clic droit"
       },
       "test": "Notification de test",
       "test_desc": "Ceci est une notification de test"
@@ -167,7 +172,11 @@
       "hooks": {
         "title": "Crochets (commandes shell)"
       },
-      "custom_action_desc": "Action et commande de délai personnalisées"
+      "custom_action_desc": "Action et commande de délai personnalisées",
+      "lock_on_sleep": {
+        "title": "Verrouiller avant la veille",
+        "desc": "Verrouiller la session avant la mise en veille du système, par exemple à la fermeture du capot"
+      }
     },
     "welcome": {
       "by_author": "par @{author}",
@@ -276,6 +285,36 @@
         },
         "preset_name_placeholder": "Entrez le nom du préréglage...",
         "screen_desc": "Configurer et modifier les widgets du bureau"
+      },
+      "lockscreen": {
+        "edit": {
+          "title": "Écran de verrouillage",
+          "desc": "Personnalisez la disposition de votre écran de verrouillage",
+          "button": "Modifier l'écran de verrouillage"
+        },
+        "limits": {
+          "title": "Limites de tentatives",
+          "desc": "Bloquer temporairement la saisie du mot de passe et désactiver le lecteur d'empreintes après trop de tentatives échouées"
+        },
+        "password_attempts": {
+          "title": "Tentatives de mot de passe",
+          "desc": "Tentatives échouées avant que la saisie du mot de passe soit bloquée pendant 30 secondes"
+        },
+        "fingerprint_attempts": {
+          "title": "Tentatives d'empreinte",
+          "desc": "Lectures échouées avant que le lecteur d'empreintes soit désactivé jusqu'au prochain déverrouillage"
+        },
+        "fingerprint": {
+          "title": "Activer la connexion par empreinte digitale",
+          "desc": "Autoriser le déverrouillage de l'écran avec une empreinte digitale"
+        },
+        "background": {
+          "select": "Choisir l'arrière-plan",
+          "follow": "Suivre le fond d'écran",
+          "custom": "Personnalisé",
+          "follows_hint": "Suit le fond d'écran",
+          "none": "Aucun arrière-plan sélectionné"
+        }
       }
     },
     "bar": {
@@ -326,6 +365,11 @@
         "title": "Largeur de la barre",
         "desc": "Définir la largeur de la barre en pourcentage"
       },
+      "center_by_edges": {
+        "title": "Centrer par les bords",
+        "desc": "Garde des marges égales à gauche et à droite de la barre au lieu de centrer sur le module central",
+        "desc_vertical": "Garde des marges égales en haut et en bas de la barre au lieu de centrer sur le module central"
+      },
       "workspaces": {
         "title": "Choisir le nombre d'espaces de travail à afficher",
         "disc": "Remarque : cela n'affecte pas le nombre réel d'espaces de travail dans le gestionnaire de fenêtres",
@@ -338,10 +382,6 @@
           "title": "Style",
           "desc": "Choisir le style visuel des indicateurs d'espaces de travail"
         }
-      },
-      "opacity": {
-        "title": "Opacité de la barre",
-        "desc": "Définir l'opacité de la barre en pourcentage"
       },
       "style": {
         "title": "Style de la barre",
@@ -531,6 +571,54 @@
           "button": "Pilule bouton interactive avec arrière-plan",
           "text": "Texte épuré et icône sans arrière-plan"
         }
+      },
+      "media": {
+        "info_mode": {
+          "title": "Secondary info",
+          "desc": "Choose whether to show the song duration or its author",
+          "duration": "Duration",
+          "author": "Author"
+        },
+        "width": {
+          "title": "Width",
+          "desc": "Width of the song title area"
+        },
+        "show_icon": {
+          "title": "Afficher l'icône",
+          "desc": "Afficher la pochette de l'album ou l'icône musicale"
+        },
+        "show_controls": {
+          "title": "Afficher les commandes",
+          "desc": "Afficher les boutons précédent, lecture et suivant"
+        },
+        "preview": {
+          "title": "Titre du morceau",
+          "author": "Song author"
+        }
+      },
+      "thickness": {
+        "title": "Épaisseur de la barre",
+        "desc": "Modifier l'épaisseur de la barre, les modules s'adaptent"
+      },
+      "menu": {
+        "show_settings": {
+          "title": "Afficher l'icône des paramètres",
+          "desc": "Affiche le bouton qui ouvre les paramètres"
+        },
+        "show_launcher": {
+          "title": "Afficher l'icône du lanceur",
+          "desc": "Affiche le bouton de recherche qui ouvre le lanceur"
+        },
+        "style": {
+          "title": "Style",
+          "desc": "Choisissez l'apparence du module de menu",
+          "name": {
+            "button": "Bouton",
+            "icon": "Icône"
+          },
+          "button": "Boutons d'icône interactifs avec arrière-plan",
+          "icon": "Icônes épurées sans arrière-plan"
+        }
       }
     },
     "theme": {
@@ -556,6 +644,18 @@
         "select_wallpaper": "Sélectionner un fond d'écran",
         "no_wallpaper_selected": "Aucun fond d'écran sélectionné",
         "select": "Fond d'écran"
+      },
+      "element_opacity": {
+        "title": "Opacité des éléments",
+        "desc": "Opacité de la barre, du dock, des widgets et de tous les autres éléments du shell"
+      },
+      "blur_background": {
+        "title": "Ajouter un arrière-plan de fond d'écran flouté",
+        "desc": "Floute le fond d'écran derrière chaque élément utilisant la transparence",
+        "style": {
+          "blur": "Flou",
+          "liquid": "Verre liquide"
+        }
       }
     },
     "file_picker": {
@@ -764,10 +864,6 @@
         "done": "Terminé",
         "empty": "Aucune application correspondante"
       },
-      "opacity": {
-        "title": "Opacité du dock",
-        "desc": "Ajuster le niveau d'opacité de l'arrière-plan du dock"
-      },
       "override_bounds": {
         "title": "Outrepasser la correction de dépassement d'écran",
         "desc": "Conserver la taille d'élément personnalisée même si le dock dépasse de l'écran"
@@ -822,6 +918,10 @@
       },
       "window_menu": {
         "untitled": "Untitled"
+      },
+      "background": {
+        "title": "Dessiner un arrière-plan derrière les applications",
+        "desc": "Afficher le panneau du dock derrière les icônes des applications"
       }
     },
     "lyrics_picker": {
@@ -906,13 +1006,65 @@
       "authenticating": "Authentification...",
       "enter_pin": "Entrer le code PIN"
     },
+    "fingerprint": {
+      "ready": "Touchez le capteur",
+      "not_recognized": "Empreinte non reconnue",
+      "recognized": "Empreinte reconnue"
+    },
     "power": {
       "suspend": "Mettre en veille",
       "reboot": "Redémarrer",
       "power_off": "Éteindre"
     },
     "default_user": "Utilisateur",
-    "unknown": "Inconnu"
+    "unknown": "Inconnu",
+    "redactor": {
+      "done": "Terminé",
+      "element": {
+        "avatar": "Avatar",
+        "user": "Utilisateur",
+        "password": "Mot de passe",
+        "fingerprint": "Empreinte digitale",
+        "notifications": "Notifications",
+        "clock": "Horloge",
+        "lockstatus": "État du verrouillage",
+        "keyboard": "Clavier",
+        "battery": "Batterie"
+      },
+      "variant": {
+        "avatar": {
+          "round": "Rond",
+          "rounded": "Arrondi"
+        },
+        "user": {
+          "filled": "Rempli",
+          "plain": "Simple"
+        },
+        "password": {
+          "filled": "Rempli",
+          "glass": "Verre"
+        },
+        "fingerprint": {
+          "classic": "Classique",
+          "ring": "Anneau",
+          "scanner": "Scanner",
+          "pulse": "Pulsation",
+          "orbit": "Orbite",
+          "liquid": "Liquide"
+        },
+        "notifications": {
+          "card": "Carte",
+          "plain": "Simple"
+        },
+        "lockstatus": {
+          "filled": "Rempli",
+          "plain": "Simple"
+        }
+      },
+      "setting": {
+        "show_text": "Afficher le texte"
+      }
+    }
   },
   "music": {
     "nothing_playing": "Aucune lecture en cours",
@@ -941,7 +1093,27 @@
     "searching_lyrics": "Recherche des paroles...",
     "no_lyrics": "Aucune parole trouvée",
     "select_local_file": "Sélectionner un fichier local",
-    "lyrics": "Paroles"
+    "lyrics": "Paroles",
+    "audio": {
+      "title": "Audio",
+      "balance": "Balance des canaux",
+      "reset": "Réinitialiser",
+      "centered": "Centré",
+      "left_slightly_favored": "Légèrement à gauche",
+      "right_slightly_favored": "Légèrement à droite",
+      "left_only": "Gauche uniquement",
+      "right_only": "Droite uniquement",
+      "left_favored": "Gauche favorisée",
+      "right_favored": "Droite favorisée",
+      "test": "Tester",
+      "stop_test": "Arrêter",
+      "mono": "Audio mono",
+      "swap": "Permuter G/D",
+      "dynamic_range": "Plage dynamique",
+      "off": "Désactivé",
+      "balanced": "Équilibré",
+      "night": "Nuit"
+    }
   },
   "network": {
     "tabs": {
@@ -964,7 +1136,8 @@
     },
     "actions": {
       "unpair": "Dissocier",
-      "scan": "Analyser"
+      "scan": "Analyser",
+      "sign_in": "Se connecter"
     }
   },
   "notifications": {
@@ -1067,11 +1240,33 @@
       "pin": "Épingler",
       "unpin": "Désépingler"
     },
+    "calculator": {
+      "history": "Historique",
+      "no_history": "Aucun calcul pour le moment",
+      "clear_history": "Effacer l'historique",
+      "copied": "Copié",
+      "deg": "Deg",
+      "rad": "Rad",
+      "grad": "Grad",
+      "inv": "Inv",
+      "mode": {
+        "normal": "Normal",
+        "advanced": "Avancé"
+      },
+      "clear": "AC",
+      "error": {
+        "syntax": "Expression invalide",
+        "div0": "Division par zéro impossible",
+        "domain": "Entrée invalide",
+        "paste": "Collage invalide"
+      }
+    },
     "tabs": {
       "draw": "Dessin",
       "system": "Système",
       "timer": "Minuteur",
       "notes": "Notes",
+      "calculator": "Calculatrice",
       "tab": "Onglet"
     }
   },
@@ -1286,6 +1481,8 @@
       "default": "Par défaut",
       "material": "Material",
       "materialAnalog": "Material analogique",
+      "lockscreen": "Écran de verrouillage",
+      "stretched": "Étiré",
       "lumen": "Lumen",
       "lyrics": "Paroles",
       "simpleLyrics": "Paroles simples"
@@ -1331,12 +1528,14 @@
     "msg_desc": "Envoyer des commandes ou des changements d'espace de travail au gestionnaire d'interface",
     "ipc_desc": "Transférer les appels IPC directement au shell",
     "kill_desc": "Arrêter proprement le démon en cours d'exécution",
+    "restart_desc": "Redémarrer le démon",
     "options": "Options :",
     "verbose_desc": "Activer la sortie de journalisation détaillée",
     "version_desc": "Afficher les informations de version et quitter",
     "help_desc": "Afficher ce message d'aide et quitter",
     "examples": "Exemples :",
     "daemon_stopped": "Le démon Serpantinum est arrêté.",
+    "daemon_restarted": "Le démon Serpantinum est redémarré.",
     "starting_daemon": "Le démon n'est pas en cours d'exécution. Démarrage de serpantinumd en arrière-plan...",
     "error_missing_qml": "Erreur : cible de lancement manquante.",
     "launch_usage": "Utilisation : serpantinum launch <start|widgetredactor> [arguments...]",
@@ -1485,7 +1684,11 @@
     "deploy": {
       "configuring_sddm": "Configuration du gestionnaire d'affichage SDDM...",
       "disabling_dm": "-> Désactivation du gestionnaire d'affichage en conflit : {dm}",
-      "sddm_success": "-> Thème SDDM Material You installé et service activé [ OK ]"
+      "sddm_success": "-> Thème SDDM Material You installé et service activé [ OK ]",
+      "sddm_no_wayland_compositor": "Aucun compositeur Wayland compatible pour l'écran de connexion (kwin_wayland/weston) trouvé, utilisation de X11 pour SDDM.",
+      "sddm_no_xorg": "Xorg introuvable, utilisation de {compositor} pour SDDM.",
+      "sddm_no_backend": "Ni Xorg ni un compositeur Wayland compatible pour l'écran de connexion (kwin_wayland/weston) n'ont été trouvés dans /usr/local/bin, /usr/bin ou /bin.",
+      "sddm_skipped": "Configuration de SDDM ignorée : aucun serveur d'affichage ni compositeur d'écran de connexion utilisable trouvé. Le gestionnaire de connexion actuel reste inchangé."
     }
   },
   "translator": {

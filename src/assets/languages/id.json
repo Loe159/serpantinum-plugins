@@ -42,7 +42,8 @@
       "dock": "Dok",
       "bar_general": "Umum",
       "bar_modules": "Modul",
-      "bar_side_modules": "Modul samping"
+      "bar_side_modules": "Modul samping",
+      "display_lockscreen": "Layar kunci"
     },
     "launcher": {
       "position": {
@@ -100,6 +101,10 @@
       "empty_graphic": {
         "title": "Animasi pusat kosong",
         "desc": "Tampilkan grafik kucing tidur di pusat notifikasi saat kosong"
+      },
+      "right_click_close": {
+        "title": "Tutup dengan klik kanan",
+        "desc": "Tutup notifikasi dengan klik kanan"
       },
       "test": "Uji notifikasi",
       "test_desc": "Ini adalah notifikasi uji coba"
@@ -165,7 +170,11 @@
       "hooks": {
         "title": "Kait (perintah shell)"
       },
-      "custom_action_desc": "Tindakan batas waktu kustom dan perintah"
+      "custom_action_desc": "Tindakan batas waktu kustom dan perintah",
+      "lock_on_sleep": {
+        "title": "Kunci sebelum tidur",
+        "desc": "Kunci sesi sebelum sistem ditangguhkan, misalnya saat menutup layar laptop"
+      }
     },
     "welcome": {
       "by_author": "oleh @{author}",
@@ -274,6 +283,36 @@
         },
         "preset_name_placeholder": "Masukkan nama prasetel...",
         "screen_desc": "Konfigurasikan dan edit widget desktop"
+      },
+      "lockscreen": {
+        "edit": {
+          "title": "Layar kunci",
+          "desc": "Sesuaikan tata letak layar kunci Anda",
+          "button": "Edit layar kunci"
+        },
+        "limits": {
+          "title": "Batas percobaan",
+          "desc": "Blokir sementara input kata sandi dan nonaktifkan pembaca sidik jari setelah terlalu banyak percobaan gagal"
+        },
+        "password_attempts": {
+          "title": "Percobaan kata sandi",
+          "desc": "Percobaan gagal sebelum input kata sandi diblokir selama 30 detik"
+        },
+        "fingerprint_attempts": {
+          "title": "Percobaan sidik jari",
+          "desc": "Pemindaian gagal sebelum pembaca sidik jari dinonaktifkan hingga pembukaan kunci berikutnya"
+        },
+        "fingerprint": {
+          "title": "Aktifkan login sidik jari",
+          "desc": "Izinkan membuka layar kunci dengan sidik jari"
+        },
+        "background": {
+          "select": "Pilih latar belakang",
+          "follow": "Ikuti wallpaper",
+          "custom": "Kustom",
+          "follows_hint": "Mengikuti wallpaper",
+          "none": "Tidak ada latar belakang dipilih"
+        }
       }
     },
     "bar": {
@@ -300,7 +339,7 @@
         "focus": "Fokus",
         "sysmon": "Monitor sistem",
         "timedate": {
-          "name": "Waktu & Tanggal",
+          "name": "Waktu & tanggal",
           "style": {
             "name": {
               "classic": "Klasik",
@@ -324,6 +363,11 @@
         "title": "Lebar bilah",
         "desc": "Atur lebar bilah sebagai persentase"
       },
+      "center_by_edges": {
+        "title": "Pusatkan menurut tepi",
+        "desc": "Menjaga margin yang sama di tepi kiri dan kanan bilah alih-alih memusatkan berdasarkan modul tengah",
+        "desc_vertical": "Menjaga margin yang sama di tepi atas dan bawah bilah alih-alih memusatkan berdasarkan modul tengah"
+      },
       "workspaces": {
         "title": "Pilih jumlah ruang kerja yang akan ditampilkan",
         "disc": "Catatan: ini tidak memengaruhi jumlah ruang kerja sebenarnya di kompositor",
@@ -336,10 +380,6 @@
           "title": "Gaya",
           "desc": "Pilih gaya visual untuk indikator ruang kerja"
         }
-      },
-      "opacity": {
-        "title": "Opasitas bilah",
-        "desc": "Atur opasitas bilah sebagai persentase"
       },
       "style": {
         "title": "Gaya bilah",
@@ -379,7 +419,7 @@
       },
       "timedate": {
         "show_date": {
-          "title": "Tampilkan Tanggal",
+          "title": "Tampilkan tanggal",
           "desc": "Tampilkan teks tanggal di samping jam"
         },
         "style": {
@@ -389,7 +429,7 @@
       },
       "vis": {
         "bars": {
-          "title": "Jumlah Bilah",
+          "title": "Jumlah bilah",
           "desc": "Jumlah bilah frekuensi yang akan ditampilkan"
         },
         "alignment": {
@@ -404,13 +444,13 @@
           "right": "Kanan"
         },
         "continuous": {
-          "title": "Gelombang Berkelanjutan",
+          "title": "Gelombang berkelanjutan",
           "desc": "Render gelombang halus dan cair alih-alih bilah terpisah"
         }
       },
       "sysmon": {
         "style": {
-          "title": "Gaya Lingkaran",
+          "title": "Gaya lingkaran",
           "desc": "Tampilan visual cincin progres",
           "wave": "Gelombang",
           "circle": "Lingkaran"
@@ -420,7 +460,7 @@
           "desc": "Tampilkan cincin utilisasi prosesor"
         },
         "ram": {
-          "title": "Penggunaan Memori",
+          "title": "Penggunaan memori",
           "desc": "Tampilkan cincin utilisasi memori (RAM)"
         },
         "temp": {
@@ -428,21 +468,21 @@
           "desc": "Tampilkan cincin suhu sistem"
         },
         "disk": {
-          "title": "Penggunaan Disk",
+          "title": "Penggunaan disk",
           "desc": "Tampilkan cincin utilisasi penyimpanan disk"
         }
       },
       "bat": {
         "show_percent": {
-          "title": "Tampilkan Persentase",
+          "title": "Tampilkan persentase",
           "desc": "Tampilkan angka persentase daya baterai"
         },
         "show_icon": {
-          "title": "Tampilkan Ikon",
+          "title": "Tampilkan ikon",
           "desc": "Tampilkan ikon baterai atau indikator grafis"
         },
         "style": {
-          "title": "Gaya Baterai",
+          "title": "Gaya baterai",
           "desc": "Pilih tampilan visual untuk indikator baterai",
           "name": {
             "classic": "Klasik",
@@ -456,11 +496,11 @@
       },
       "wifi": {
         "show_icon": {
-          "title": "Tampilkan Ikon",
+          "title": "Tampilkan ikon",
           "desc": "Tampilkan ikon jaringan atau indikator sinyal"
         },
         "show_name": {
-          "title": "Tampilkan Nama",
+          "title": "Tampilkan nama",
           "desc": "Tampilkan SSID jaringan atau teks status koneksi"
         },
         "style": {
@@ -476,11 +516,11 @@
       },
       "bt": {
         "show_icon": {
-          "title": "Tampilkan Ikon",
+          "title": "Tampilkan ikon",
           "desc": "Tampilkan ikon status bluetooth"
         },
         "show_name": {
-          "title": "Tampilkan Nama",
+          "title": "Tampilkan nama",
           "desc": "Tampilkan nama perangkat bluetooth yang tersambung"
         },
         "style": {
@@ -496,11 +536,11 @@
       },
       "vol": {
         "show_icon": {
-          "title": "Tampilkan Ikon",
+          "title": "Tampilkan ikon",
           "desc": "Tampilkan ikon speaker volume"
         },
         "show_percent": {
-          "title": "Tampilkan Persentase",
+          "title": "Tampilkan persentase",
           "desc": "Tampilkan angka persentase volume audio"
         },
         "style": {
@@ -516,7 +556,7 @@
       },
       "kb": {
         "show_icon": {
-          "title": "Tampilkan Ikon",
+          "title": "Tampilkan ikon",
           "desc": "Tampilkan ikon tata letak papan ketik"
         },
         "style": {
@@ -528,6 +568,54 @@
           },
           "button": "Tombol kapsul interaktif dengan latar belakang",
           "text": "Teks dan ikon bersih tanpa latar belakang"
+        }
+      },
+      "media": {
+        "info_mode": {
+          "title": "Secondary info",
+          "desc": "Choose whether to show the song duration or its author",
+          "duration": "Duration",
+          "author": "Author"
+        },
+        "width": {
+          "title": "Width",
+          "desc": "Width of the song title area"
+        },
+        "show_icon": {
+          "title": "Tampilkan ikon",
+          "desc": "Tampilkan sampul album atau ikon musik"
+        },
+        "show_controls": {
+          "title": "Tampilkan kontrol",
+          "desc": "Tampilkan tombol sebelumnya, putar, dan berikutnya"
+        },
+        "preview": {
+          "title": "Judul lagu",
+          "author": "Song author"
+        }
+      },
+      "thickness": {
+        "title": "Ketebalan bar",
+        "desc": "Ubah ketebalan bar, modul menyesuaikan"
+      },
+      "menu": {
+        "show_settings": {
+          "title": "Tampilkan ikon pengaturan",
+          "desc": "Menampilkan tombol yang membuka pengaturan"
+        },
+        "show_launcher": {
+          "title": "Tampilkan ikon peluncur",
+          "desc": "Menampilkan tombol pencarian yang membuka peluncur"
+        },
+        "style": {
+          "title": "Gaya",
+          "desc": "Pilih tampilan visual modul menu",
+          "name": {
+            "button": "Tombol",
+            "icon": "Ikon"
+          },
+          "button": "Tombol ikon interaktif dengan latar belakang",
+          "icon": "Ikon bersih tanpa latar belakang"
         }
       }
     },
@@ -554,6 +642,18 @@
         "select_wallpaper": "Pilih gambar latar",
         "no_wallpaper_selected": "Tidak ada gambar latar yang dipilih",
         "select": "Gambar latar"
+      },
+      "element_opacity": {
+        "title": "Opasitas elemen",
+        "desc": "Opasitas bilah, dock, widget, dan semua elemen shell lainnya"
+      },
+      "blur_background": {
+        "title": "Tambahkan latar belakang wallpaper yang diburamkan",
+        "desc": "Memburamkan wallpaper di belakang setiap elemen yang menggunakan transparansi",
+        "style": {
+          "blur": "Buram",
+          "liquid": "Kaca cair"
+        }
       }
     },
     "file_picker": {
@@ -762,10 +862,6 @@
         "done": "Selesai",
         "empty": "Tidak ada aplikasi yang cocok"
       },
-      "opacity": {
-        "title": "Opasitas dok",
-        "desc": "Sesuaikan tingkat opasitas latar belakang dok"
-      },
       "override_bounds": {
         "title": "Abaikan koreksi ukuran di luar batas layar",
         "desc": "Pertahankan ukuran elemen kustom meskipun dok melebihi batas layar"
@@ -820,6 +916,10 @@
       },
       "window_menu": {
         "untitled": "Untitled"
+      },
+      "background": {
+        "title": "Gambar latar di belakang aplikasi",
+        "desc": "Tampilkan panel dock di belakang ikon aplikasi"
       }
     },
     "lyrics_picker": {
@@ -904,13 +1004,65 @@
       "authenticating": "Mengautentikasi...",
       "enter_pin": "Masukkan PIN"
     },
+    "fingerprint": {
+      "ready": "Sentuh sensor",
+      "not_recognized": "Sidik jari tidak dikenali",
+      "recognized": "Sidik jari dikenali"
+    },
     "power": {
       "suspend": "Suspensi",
       "reboot": "Mulai ulang",
       "power_off": "Matikan daya"
     },
     "default_user": "Pengguna",
-    "unknown": "Tidak diketahui"
+    "unknown": "Tidak diketahui",
+    "redactor": {
+      "done": "Selesai",
+      "element": {
+        "avatar": "Avatar",
+        "user": "Pengguna",
+        "password": "Kata sandi",
+        "fingerprint": "Sidik jari",
+        "notifications": "Notifikasi",
+        "clock": "Jam",
+        "lockstatus": "Status kunci",
+        "keyboard": "Papan ketik",
+        "battery": "Baterai"
+      },
+      "variant": {
+        "avatar": {
+          "round": "Bulat",
+          "rounded": "Membulat"
+        },
+        "user": {
+          "filled": "Terisi",
+          "plain": "Polos"
+        },
+        "password": {
+          "filled": "Terisi",
+          "glass": "Kaca"
+        },
+        "fingerprint": {
+          "classic": "Klasik",
+          "ring": "Cincin",
+          "scanner": "Pemindai",
+          "pulse": "Denyut",
+          "orbit": "Orbit",
+          "liquid": "Cair"
+        },
+        "notifications": {
+          "card": "Kartu",
+          "plain": "Polos"
+        },
+        "lockstatus": {
+          "filled": "Terisi",
+          "plain": "Polos"
+        }
+      },
+      "setting": {
+        "show_text": "Tampilkan teks"
+      }
+    }
   },
   "music": {
     "nothing_playing": "Tidak ada yang diputar",
@@ -939,7 +1091,27 @@
     "searching_lyrics": "Mencari lirik...",
     "no_lyrics": "Lirik tidak ditemukan",
     "select_local_file": "Pilih berkas lokal",
-    "lyrics": "Lirik"
+    "lyrics": "Lirik",
+    "audio": {
+      "title": "Audio",
+      "balance": "Keseimbangan kanal",
+      "reset": "Atur ulang",
+      "centered": "Seimbang",
+      "left_slightly_favored": "Sedikit condong ke kiri",
+      "right_slightly_favored": "Sedikit condong ke kanan",
+      "left_only": "Hanya kanal kiri",
+      "right_only": "Hanya kanal kanan",
+      "left_favored": "Condong ke kiri",
+      "right_favored": "Condong ke kanan",
+      "test": "Uji",
+      "stop_test": "Hentikan",
+      "mono": "Audio mono",
+      "swap": "Tukar kiri/kanan",
+      "dynamic_range": "Rentang dinamis",
+      "off": "Mati",
+      "balanced": "Seimbang",
+      "night": "Malam"
+    }
   },
   "network": {
     "tabs": {
@@ -962,7 +1134,8 @@
     },
     "actions": {
       "unpair": "Putuskan pasangan",
-      "scan": "Pindai"
+      "scan": "Pindai",
+      "sign_in": "Masuk"
     }
   },
   "notifications": {
@@ -1065,11 +1238,33 @@
       "pin": "Sematkan",
       "unpin": "Lepas sematan"
     },
+    "calculator": {
+      "history": "Riwayat",
+      "no_history": "Belum ada perhitungan",
+      "clear_history": "Hapus riwayat",
+      "copied": "Disalin",
+      "deg": "Deg",
+      "rad": "Rad",
+      "grad": "Grad",
+      "inv": "Inv",
+      "mode": {
+        "normal": "Normal",
+        "advanced": "Lanjutan"
+      },
+      "clear": "AC",
+      "error": {
+        "syntax": "Ekspresi tidak valid",
+        "div0": "Tidak dapat membagi dengan nol",
+        "domain": "Masukan tidak valid",
+        "paste": "Tempel tidak valid"
+      }
+    },
     "tabs": {
       "draw": "Gambar",
       "system": "Sistem",
       "timer": "Timer",
       "notes": "Catatan",
+      "calculator": "Kalkulator",
       "tab": "Tab"
     }
   },
@@ -1284,6 +1479,8 @@
       "default": "Default",
       "material": "Material",
       "materialAnalog": "Material Analog",
+      "lockscreen": "Lockscreen",
+      "stretched": "Stretched",
       "lumen": "Lumen",
       "lyrics": "Lirik",
       "simpleLyrics": "Lirik Sederhana"
@@ -1329,12 +1526,14 @@
     "msg_desc": "Kirim perintah atau peralihan ruang kerja ke pengelola UI",
     "ipc_desc": "Teruskan panggilan IPC langsung ke shell",
     "kill_desc": "Hentikan daemon yang sedang berjalan secara bersih",
+    "restart_desc": "Mulai ulang daemon",
     "options": "Opsi:",
     "verbose_desc": "Aktifkan keluaran log verbose",
     "version_desc": "Tampilkan informasi versi lalu keluar",
     "help_desc": "Tampilkan pesan bantuan ini lalu keluar",
     "examples": "Contoh:",
     "daemon_stopped": "Daemon Serpantinum dihentikan.",
+    "daemon_restarted": "Daemon Serpantinum dimulai ulang.",
     "starting_daemon": "Daemon tidak berjalan. Memulai serpantinumd di latar belakang...",
     "error_missing_qml": "Kesalahan: target untuk diluncurkan tidak ada.",
     "launch_usage": "Penggunaan: serpantinum launch <start|widgetredactor> [arg...]",
@@ -1483,7 +1682,11 @@
     "deploy": {
       "configuring_sddm": "Mengonfigurasi manajer tampilan SDDM...",
       "disabling_dm": "-> Menonaktifkan manajer tampilan yang berkonflik: {dm}",
-      "sddm_success": "-> Tema Material You SDDM terinstal dan layanan diaktifkan [ OKE ]"
+      "sddm_success": "-> Tema Material You SDDM terinstal dan layanan diaktifkan [ OKE ]",
+      "sddm_no_wayland_compositor": "Compositor Wayland yang didukung untuk layar login (kwin_wayland/weston) tidak ditemukan, SDDM menggunakan X11.",
+      "sddm_no_xorg": "Xorg tidak ditemukan, SDDM menggunakan {compositor}.",
+      "sddm_no_backend": "Xorg maupun compositor Wayland yang didukung untuk layar login (kwin_wayland/weston) tidak ditemukan di /usr/local/bin, /usr/bin atau /bin.",
+      "sddm_skipped": "Pengaturan SDDM dilewati: tidak ada server tampilan atau compositor login yang dapat digunakan. Display manager saat ini tidak diubah."
     }
   },
   "translator": {

@@ -13,7 +13,7 @@ Item {
     property int cornerRadius: 12
     readonly property real effectiveRadius: Math.max(0, Math.min(root.cornerRadius, Math.min(width > 0 ? width : desiredWidth, height > 0 ? height : implicitHeight) / 2))
 
-    property string buttonText: "FILLBUTTON"
+    property string buttonText: ""
     property string subText: ""
     property string buttonIcon: "󰐊"
     property int iconFontSize: 20
@@ -22,11 +22,12 @@ Item {
     property int maxWidth: 0
     property int contentAlignment: Qt.AlignHCenter
 
-    property color accentColor: "#89b4fa"
-    property color baseColor: "#181825"
-    property color hoverColor: "#1e1e2e"
-    property color textColor: "#cdd6f4"
-    property color filledTextColor: "#11111b"
+    property color accentColor: ThemeBackend.blue
+    property color baseColor: ThemeBackend.mantle
+    property color hoverColor: ThemeBackend.base
+    property color textColor: ThemeBackend.text
+    property real bgOpacity: 1.0
+    property color filledTextColor: ThemeBackend.crust
     property int fillDuration: 800
     property int autoResetTimeout: 1200
     property bool action_highlight: false
@@ -85,7 +86,7 @@ Item {
                 id: iconText
                 visible: root.buttonIcon !== ""
                 text: root.buttonIcon
-                font.family: "Iosevka Nerd Font"
+                font.family: ThemeBackend.iconFont
                 font.pixelSize: root.iconFontSize
                 color: bRoot.contentTextColor
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -196,7 +197,7 @@ Item {
                                 id: charText
                                 anchors.centerIn: parent
                                 text: charSlot.modelData === " " ? "\u00A0" : charSlot.modelData
-                                font.family: "JetBrains Mono"
+                                font.family: ThemeBackend.fontFamily
                                 font.weight: Font.Bold
                                 font.pixelSize: root.textFontSize
                                 color: bRoot.contentTextColor
@@ -225,7 +226,7 @@ Item {
                     id: subTextItem
                     visible: root.subText !== ""
                     text: root.subText
-                    font.family: "JetBrains Mono"
+                    font.family: ThemeBackend.fontFamily
                     font.pixelSize: Math.max(10, root.textFontSize - 6)
                     color: bRoot.contentTextColor
                     horizontalAlignment: root.contentAlignment === Qt.AlignHCenter ? Text.AlignHCenter : I18n.textAlignment
@@ -282,10 +283,23 @@ Item {
         id: btnShape
         anchors.fill: parent
         radius: root.effectiveRadius
-        clip: true
-        color: root.isHoveredOrHighlighted ? root.hoverColor : root.baseColor
+        clip: !glass.active
+        color: glass.active ? "transparent" : Qt.alpha(root.isHoveredOrHighlighted ? root.hoverColor : root.baseColor, Math.min(1, root.bgOpacity * (root.isHoveredOrHighlighted ? root.hoverColor.a : root.baseColor.a)))
 
         Behavior on color { ColorAnimation { duration: 180 } }
+
+        GlassFill {
+            id: glass
+            anchors.fill: parent
+            shadow: 1
+            press: (btnMa.pressed && !root.isTriggered) ? 0.6 + 0.4 * root.fillLevel : (root.isHoveredOrHighlighted ? 0.25 : 0)
+            pulse: Math.min(1, root.flashOpacity * 2.5)
+            Behavior on press { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            radius: root.effectiveRadius
+            tintColor: root.isHoveredOrHighlighted ? root.hoverColor : root.baseColor
+            tintAmount: (root.isHoveredOrHighlighted ? 0.4 : 0.28) * root.bgOpacity
+            Behavior on tintAmount { NumberAnimation { duration: 180 } }
+        }
 
         scale: (btnMa.pressed && !root.isTriggered ? 0.96 : (root.isHoveredOrHighlighted ? 1.02 : 1.0)) * root.popScale
         Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
@@ -313,7 +327,24 @@ Item {
             vertical: 0.0
             color1: Qt.darker(root.accentColor, 1.15)
             color2: root.accentColor
-            visible: root.fillLevel > 0.001
+            visible: !glass.active && root.fillLevel > 0.001
+        }
+
+        LiquidFill {
+            id: liquidFill
+            anchors.fill: parent
+            radius: root.effectiveRadius
+            fillLevel: root.fillLevel
+            waveAmp: waveCanvas.waveAmp
+            phase: waveCanvas.wavePhase
+            color1: Qt.lighter(root.accentColor, 1.1)
+            color2: root.accentColor
+            bodyAlpha: 0.4
+            visible: glass.active && root.fillLevel > 0.001
+            property real lift: (root.fillLevel > 0.001 && root.fillLevel < 0.999) ? 1.0 : 0.0
+            Behavior on lift { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+            transformOrigin: Item.Left
+            scale: 1.0 + 0.07 * lift
         }
 
         Rectangle {
@@ -321,6 +352,7 @@ Item {
             radius: root.effectiveRadius
             color: "#ffffff"
             opacity: root.flashOpacity
+            visible: !glass.active
             PropertyAnimation on opacity { id: btnFlashAnim; to: 0; duration: 400; easing.type: Easing.OutExpo }
         }
 

@@ -4,3 +4,4 @@ GuideSearchResults 1.0 GuideSearchResults.qml
 GuideContent 1.0 GuideContent.qml
 PluginsTab 1.0 PluginsTab.qml
 PluginSettingsTab 1.0 PluginSettingsTab.qml
+GuideTab 1.0 GuideTab.qml
