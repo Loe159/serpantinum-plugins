@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtQuick.Controls
 import Quickshell
 import "../"
@@ -271,11 +272,37 @@ Item {
                                         color: pluginCard.pluginEnabled ? Qt.alpha(ThemeBackend.mauve, 0.18) : ThemeBackend.surface0
 
                                         Text {
+                                            visible: !pluginCard.pluginData.iconImage
                                             anchors.centerIn: parent
                                             text: pluginCard.pluginData.icon || "󰏗"
                                             font.family: "Iosevka Nerd Font"
                                             font.pixelSize: rootObj.s(20)
                                             color: pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1
+                                        }
+
+                                        // Optional image icons allow branded plugins to
+                                        // match Serpantinum's live theme without a glyph substitute.
+                                        Image {
+                                            id: pluginImageSource
+                                            visible: false
+                                            anchors.centerIn: parent
+                                            width: rootObj.s(27)
+                                            height: rootObj.s(27)
+                                            sourceSize.width: rootObj.s(54)
+                                            sourceSize.height: rootObj.s(54)
+                                            fillMode: Image.PreserveAspectFit
+                                            source: pluginCard.pluginData.iconImage && pluginCard.pluginData._dir
+                                                ? "file://" + pluginCard.pluginData._dir + "/" + pluginCard.pluginData.iconImage
+                                                : ""
+                                        }
+
+                                        MultiEffect {
+                                            visible: !!pluginCard.pluginData.iconImage
+                                            anchors.fill: pluginImageSource
+                                            source: pluginImageSource
+                                            colorization: 1.0
+                                            colorizationColor: pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1
+                                            Behavior on colorizationColor { ColorAnimation { duration: 180 } }
                                         }
                                     }
 
