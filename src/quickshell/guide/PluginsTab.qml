@@ -84,14 +84,24 @@ Item {
 
             ClickButton {
                 implicitHeight: rootObj.s(32)
-                buttonText: PluginManager.scanning ? "Scanning…" : "Refresh"
+                buttonText: PluginManager.updating ? "Updating…" : (PluginManager.scanning ? "Scanning…" : "Refresh")
                 buttonIcon: "󰑐"
                 iconFontSize: rootObj.s(14)
                 accentColor: ThemeBackend.surface0
                 textColor: ThemeBackend.text
-                enabled: !PluginManager.scanning && !PluginManager.installing
-                onClicked: PluginManager.refresh()
+                enabled: !PluginManager.scanning && !PluginManager.installing && !PluginManager.updating
+                onClicked: PluginManager.refreshFromGit()
             }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            visible: PluginManager.updateMessage !== ""
+            text: PluginManager.updateMessage
+            font.family: ThemeBackend.fontFamily
+            font.pixelSize: rootObj.s(10)
+            color: ThemeBackend.subtext0
+            wrapMode: Text.Wrap
         }
 
         Rectangle {
@@ -163,11 +173,11 @@ Item {
                     ClickButton {
                         implicitWidth: rootObj.s(118)
                         implicitHeight: rootObj.s(36)
-                        buttonText: PluginManager.installing ? "Installing…" : "Install"
+                        buttonText: PluginManager.installing ? "Installing…" : "Install / Sync"
                         buttonIcon: PluginManager.installing ? "󰑐" : "󰐕"
                         accentColor: PluginManager.installing ? ThemeBackend.surface1 : ThemeBackend.mauve
                         textColor: PluginManager.installing ? ThemeBackend.subtext0 : ThemeBackend.crust
-                        enabled: !PluginManager.installing && pluginsRoot.installUrl.trim() !== ""
+                        enabled: !PluginManager.installing && !PluginManager.updating && pluginsRoot.installUrl.trim() !== ""
                         onClicked: PluginManager.installFromGit(pluginsRoot.installUrl)
                     }
                 }
