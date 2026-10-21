@@ -266,10 +266,10 @@ Item {
                                         Layout.preferredWidth: rootObj.s(42)
                                         Layout.preferredHeight: rootObj.s(42)
                                         radius: ThemeBackend.borderRadius
-                                        // Monochrome branded SVGs are white on the theme accent;
-                                        // avoid a shader, which can render transparent on some backends.
-                                        color: pluginCard.pluginData.iconImageMonochrome
-                                            ? (pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1)
+                                        // Custom SVG artwork keeps its transparent background.
+                                        // Glyph-only plugins retain their Serpantinum surface.
+                                        color: pluginCard.pluginData.iconImage
+                                            ? "transparent"
                                             : (pluginCard.pluginEnabled ? Qt.alpha(ThemeBackend.mauve, 0.18) : ThemeBackend.surface0)
                                         Behavior on color { ColorAnimation { duration: 180 } }
 
@@ -282,6 +282,7 @@ Item {
                                             sourceSize.width: rootObj.s(54)
                                             sourceSize.height: rootObj.s(54)
                                             fillMode: Image.PreserveAspectFit
+                                            opacity: pluginCard.pluginEnabled ? 1 : 0.5
                                             source: pluginCard.pluginData.iconImage && pluginCard.pluginData._dir
                                                 ? "file://" + pluginCard.pluginData._dir + "/" + pluginCard.pluginData.iconImage
                                                 : ""
@@ -295,8 +296,8 @@ Item {
                                             font.family: pluginCard.pluginData.iconImage ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
                                             font.pixelSize: rootObj.s(pluginCard.pluginData.iconImage ? 12 : 20)
                                             font.weight: Font.Bold
-                                            color: pluginCard.pluginData.iconImageMonochrome
-                                                ? ThemeBackend.crust
+                                            color: pluginCard.pluginData.iconImage
+                                                ? (pluginCard.pluginEnabled ? ThemeBackend.text : ThemeBackend.overlay1)
                                                 : (pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1)
                                         }
                                     }
