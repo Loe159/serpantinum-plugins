@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
 import QtQuick.Controls
 import Quickshell
 import "../"
@@ -267,22 +266,16 @@ Item {
                                         Layout.preferredWidth: rootObj.s(42)
                                         Layout.preferredHeight: rootObj.s(42)
                                         radius: ThemeBackend.borderRadius
-                                        color: pluginCard.pluginEnabled ? Qt.alpha(ThemeBackend.mauve, 0.18) : ThemeBackend.surface0
+                                        // Monochrome branded SVGs are white on the theme accent;
+                                        // avoid a shader, which can render transparent on some backends.
+                                        color: pluginCard.pluginData.iconImageMonochrome
+                                            ? (pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1)
+                                            : (pluginCard.pluginEnabled ? Qt.alpha(ThemeBackend.mauve, 0.18) : ThemeBackend.surface0)
+                                        Behavior on color { ColorAnimation { duration: 180 } }
 
-                                        Text {
-                                            visible: !pluginCard.pluginData.iconImage
-                                            anchors.centerIn: parent
-                                            text: pluginCard.pluginData.icon || "󰏗"
-                                            font.family: "Iosevka Nerd Font"
-                                            font.pixelSize: rootObj.s(20)
-                                            color: pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1
-                                        }
-
-                                        // Optional image icons allow branded plugins to
-                                        // match Serpantinum's live theme without a glyph substitute.
                                         Image {
                                             id: pluginImageSource
-                                            visible: false
+                                            visible: !!pluginCard.pluginData.iconImage && status === Image.Ready
                                             anchors.centerIn: parent
                                             width: rootObj.s(27)
                                             height: rootObj.s(27)
@@ -294,13 +287,17 @@ Item {
                                                 : ""
                                         }
 
-                                        MultiEffect {
-                                            visible: !!pluginCard.pluginData.iconImage
-                                            anchors.fill: pluginImageSource
-                                            source: pluginImageSource
-                                            colorization: 1.0
-                                            colorizationColor: pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1
-                                            Behavior on colorizationColor { ColorAnimation { duration: 180 } }
+                                        Text {
+                                            // If the image cannot load, keep a visible fallback.
+                                            visible: !pluginCard.pluginData.iconImage || pluginImageSource.status !== Image.Ready
+                                            anchors.centerIn: parent
+                                            text: pluginCard.pluginData.icon || "󰏗"
+                                            font.family: pluginCard.pluginData.iconImage ? ThemeBackend.fontFamily : "Iosevka Nerd Font"
+                                            font.pixelSize: rootObj.s(pluginCard.pluginData.iconImage ? 12 : 20)
+                                            font.weight: Font.Bold
+                                            color: pluginCard.pluginData.iconImageMonochrome
+                                                ? ThemeBackend.crust
+                                                : (pluginCard.pluginEnabled ? ThemeBackend.mauve : ThemeBackend.overlay1)
                                         }
                                     }
 

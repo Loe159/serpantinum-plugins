@@ -57,6 +57,20 @@ Item {
         sourceUpdater.running = true;
     }
 
+    // A metadata-only scan cannot recompile already loaded QML components.
+    // A hard reload re-creates the plugin host and every Bar entry after Git sync.
+    function activateUpdatedPlugins() {
+        Qt.callLater(function() {
+            try {
+                Quickshell.reload(true);
+            } catch (error) {
+                console.warn("[plugins] reload failed: " + error);
+                root.updateMessage += " · Restart Serpantinum to apply plugin code";
+                root.refresh();
+            }
+        });
+    }
+
     function refresh() {
         if (scanner.running) scanner.running = false;
         lastError = "";
@@ -426,6 +440,12 @@ Item {
                             : "Git plugins already up to date";
                         if (skipped.length) root.updateMessage += " · Preserved: " + skipped.join(", ");
                         if (warnings.length) root.updateMessage += " · " + warnings.join(" · ");
+                        if (changes.length) {
+                            root.updateMessage += " · Reloading Serpantinum…";
+                            root.updating = false;
+                            root.activateUpdatedPlugins();
+                            return;
+                        }
                     }
                 } catch (e) {
                     root.updateMessage = "Git refresh failed: " + String(e);
@@ -464,7 +484,8 @@ Item {
                         if (skipped.length) parts.push("Already present (unchanged): " + skipped.join(", "));
                         root.installMessage = parts.length ? parts.join(" · ") : "Plugins already up to date";
                         root.installFinished(true, root.installMessage);
-                        root.refresh();
+                        if (installed.length || updated.length) root.activateUpdatedPlugins();
+                        else root.refresh();
                     } else {
                         root.installSucceeded = false;
                         root.installMessage = result.error || "Plugin installation failed";
