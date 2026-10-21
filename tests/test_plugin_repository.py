@@ -126,6 +126,40 @@ class RepoTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "iconImage not found"):
             plugin_repo.sync_repository(str(self.source), self.path / "other-install", 1)
 
+    def test_scan_ignores_backup_from_legacy_upgrade(self):
+        # Regression: the old version was moved to lpic-daily.backup.TIMESTAMP.
+        # The scanner previously overwrote the fresh 0.1.1 entry with 0.1.0.
+        self.plugin(self.target / "lpic-daily", "lpic-daily", version="0.1.1")
+        self.plugin(self.target / "lpic-daily.backup.20261021-0950", "lpic-daily", version="0.1.0")
+        result = plugin_repo.scan_plugins([(self.target, "user")], 1)
+        self.assertEqual(len(result["plugins"]), 1)
+        self.assertEqual(result["plugins"][0]["version"], "0.1.1")
+        self.assertEqual(result["errors"], [])
+
+        process = subprocess.run([
+            "python3", str(MODULE_PATH), "scan", "1", str(self.path / "missing"), str(self.target)
+        ], check=True, capture_output=True, text=True)
+        output = json.loads(process.stdout)
+        self.assertEqual(output["plugins"][0]["version"], "0.1.1")
+
+    def test_scan_canonical_name_wins_over_other_copy(self):
+        # Also protect against copies that are not named like standard backups.
+        self.plugin(self.target / "a-old-copy", "lpic-daily", version="0.1.0")
+        self.plugin(self.target / "lpic-daily", "lpic-daily", version="0.1.1")
+        result = plugin_repo.scan_plugins([(self.target, "user")], 1)
+        self.assertEqual(len(result["plugins"]), 1)
+        self.assertEqual(result["plugins"][0]["version"], "0.1.1")
+
+    def test_scan_keeps_user_overrides_and_legacy_folder_names(self):
+        builtin = self.path / "builtin"
+        self.plugin(builtin / "timer", "serpantinum.timer", version="0.1.0")
+        self.plugin(self.target / "timer", "serpantinum.timer", version="0.2.0")
+        result = plugin_repo.scan_plugins([
+            (builtin, "builtin"), (self.target, "user")
+        ], 1)
+        self.assertEqual(result["plugins"][0]["version"], "0.2.0")
+        self.assertEqual(result["plugins"][0]["_source"], "user")
+
     def test_refresh_without_tracked_source(self):
         self.assertTrue(plugin_repo.refresh(self.target, 1)["warnings"])
 

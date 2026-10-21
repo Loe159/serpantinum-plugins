@@ -44,75 +44,6 @@ Item {
     signal pluginFailed(string pluginId, string reason)
     signal installFinished(bool success, string message)
 
-    function scannerScript() {
-        return [
-            "import json, pathlib, sys",
-            "host_api = int(sys.argv[1])",
-            "roots = [(sys.argv[2], 'builtin'), (sys.argv[3], 'user')]",
-            "plugins = {}",
-            "errors = []",
-            "for root, source in roots:",
-            "    base = pathlib.Path(root).expanduser()",
-            "    if not base.is_dir():",
-            "        continue",
-            "    for manifest_path in sorted(base.glob('*/plugin.json')):",
-            "        try:",
-            "            data = json.loads(manifest_path.read_text(encoding='utf-8'))",
-            "            plugin_id = str(data.get('id') or manifest_path.parent.name).strip()",
-            "            if not plugin_id:",
-            "                raise ValueError('missing plugin id')",
-            "            api = int(data.get('apiVersion', data.get('api_version', 1)))",
-            "            if api > host_api:",
-            "                raise ValueError(f'requires plugin API {api}, host provides {host_api}')",
-            "            entry = str(data.get('entry') or 'Plugin.qml')",
-            "            entry_path = (manifest_path.parent / entry).resolve()",
-            "            if not entry_path.is_file():",
-            "                raise ValueError(f'entry not found: {entry}')",
-            "            bar_entry = str(data.get('barEntry') or '').strip()",
-            "            if bar_entry and not (manifest_path.parent / bar_entry).is_file():",
-            "                raise ValueError(f'bar entry not found: {bar_entry}')",
-            "            settings_entry = str(data.get('settingsEntry') or '').strip()",
-            "            if settings_entry and not (manifest_path.parent / settings_entry).is_file():",
-            "                raise ValueError(f'settings entry not found: {settings_entry}')",
-            "            icon_image = str(data.get('iconImage') or '').strip()",
-            "            if icon_image:",
-            "                icon_path = (manifest_path.parent / icon_image).resolve()",
-            "                if not icon_path.is_relative_to(manifest_path.parent.resolve()) or not icon_path.is_file():",
-            "                    raise ValueError(f'icon image not found: {icon_image}')",
-            "            bar_entries = data.get('barEntries') or []",
-            "            if bar_entries and not isinstance(bar_entries, list):",
-            "                raise ValueError('barEntries must be an array')",
-            "            seen_bar_ids = set()",
-            "            for item in bar_entries:",
-            "                if not isinstance(item, dict):",
-            "                    raise ValueError('barEntries items must be objects')",
-            "                item_id = str(item.get('id') or '').strip()",
-            "                item_entry = str(item.get('entry') or '').strip()",
-            "                if not item_id or not item_entry:",
-            "                    raise ValueError('barEntries items require id and entry')",
-            "                if item_id in seen_bar_ids:",
-            "                    raise ValueError(f'duplicate bar entry id: {item_id}')",
-            "                seen_bar_ids.add(item_id)",
-            "                if not (manifest_path.parent / item_entry).is_file():",
-            "                    raise ValueError(f'bar entry not found: {item_entry}')",
-            "            data['id'] = plugin_id",
-            "            data['apiVersion'] = api",
-            "            data['entry'] = entry",
-            "            if bar_entry:",
-            "                data['barEntry'] = bar_entry",
-            "            if settings_entry:",
-            "                data['settingsEntry'] = settings_entry",
-            "            data['_dir'] = str(manifest_path.parent.resolve())",
-            "            data['_manifest'] = str(manifest_path.resolve())",
-            "            data['_source'] = source",
-            "            plugins[plugin_id] = data",
-            "        except Exception as exc:",
-            "            errors.append({'manifest': str(manifest_path), 'error': str(exc)})",
-            "result = {'plugins': [plugins[key] for key in sorted(plugins)], 'errors': errors}",
-            "print(json.dumps(result, ensure_ascii=False))"
-        ].join("\n");
-    }
-
     // A manual refresh also checks tracked Git repositories for newly added plugins.
     // Startup and internal refreshes remain local and fast.
     function refreshFromGit() {
@@ -443,7 +374,7 @@ Item {
     Process {
         id: scanner
         running: false
-        command: ["python3", "-c", root.scannerScript(), root.apiVersion.toString(), root.builtinPluginDir, root.userPluginDir]
+        command: ["python3", Caching.qsDir + "/plugins/plugin_repository.py", "scan", root.apiVersion.toString(), root.builtinPluginDir, root.userPluginDir]
 
         stdout: StdioCollector {
             onStreamFinished: {
