@@ -370,7 +370,7 @@ Popup {
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: modelData.icon
-                                                font.family: "Iosevka Nerd Font"
+                                                font.family: ThemeBackend.iconFont
                                                 font.pixelSize: Scaler.s(16)
                                                 color: parent.parent.parent.isActive ? ThemeBackend.crust : (placeMa.containsMouse ? ThemeBackend.text : ThemeBackend.subtext0)
 
@@ -499,7 +499,7 @@ Popup {
                                         Text {
                                             text: "󰅂"
                                             color: ThemeBackend.surface2
-                                            font.family: "Iosevka Nerd Font"
+                                            font.family: ThemeBackend.iconFont
                                             font.pixelSize: Scaler.s(14)
                                             visible: index > 0
                                             anchors.verticalCenter: parent.verticalCenter
@@ -656,7 +656,7 @@ Popup {
 
                                 Text {
                                     text: fileIsDir ? "󰉋" : "󰋩"
-                                    font.family: "Iosevka Nerd Font"
+                                    font.family: ThemeBackend.iconFont
                                     font.pixelSize: Scaler.s(16)
                                     color: fileIsDir ? ThemeBackend.blue : ThemeBackend.text
                                 }

@@ -42,7 +42,8 @@
       "dock": "Dock",
       "bar_general": "Algemeen",
       "bar_modules": "Modules",
-      "bar_side_modules": "Zijmodules"
+      "bar_side_modules": "Zijmodules",
+      "display_lockscreen": "Vergrendelscherm"
     },
     "launcher": {
       "position": {
@@ -100,6 +101,10 @@
       "empty_graphic": {
         "title": "Animatie bij leeg meldingencentrum",
         "desc": "Toon de slapende kat-animatie in het meldingencentrum wanneer dit leeg is"
+      },
+      "right_click_close": {
+        "title": "Sluiten met rechtsklik",
+        "desc": "Sluit een melding met een rechtsklik"
       },
       "test": "Testmelding",
       "test_desc": "Dit is een testmelding"
@@ -165,7 +170,11 @@
       "hooks": {
         "title": "Hooks (shell-opdrachten)"
       },
-      "custom_action_desc": "Aangepaste time-outactie en opdracht"
+      "custom_action_desc": "Aangepaste time-outactie en opdracht",
+      "lock_on_sleep": {
+        "title": "Vergrendelen voor slaapstand",
+        "desc": "Vergrendel de sessie voordat het systeem in de slaapstand gaat, bijvoorbeeld bij het sluiten van het scherm"
+      }
     },
     "welcome": {
       "by_author": "door @{author}",
@@ -274,6 +283,36 @@
         },
         "preset_name_placeholder": "Voer voorinstellingsnaam in...",
         "screen_desc": "Bureaubladwidgets configureren en bewerken"
+      },
+      "lockscreen": {
+        "edit": {
+          "title": "Vergrendelscherm",
+          "desc": "Pas de indeling van je vergrendelscherm aan",
+          "button": "Vergrendelscherm bewerken"
+        },
+        "limits": {
+          "title": "Pogingslimieten",
+          "desc": "Blokkeer wachtwoordinvoer tijdelijk en schakel de vingerafdruklezer uit na te veel mislukte pogingen"
+        },
+        "password_attempts": {
+          "title": "Wachtwoordpogingen",
+          "desc": "Mislukte pogingen voordat wachtwoordinvoer 30 seconden wordt geblokkeerd"
+        },
+        "fingerprint_attempts": {
+          "title": "Vingerafdrukpogingen",
+          "desc": "Mislukte scans voordat de vingerafdruklezer tot de volgende ontgrendeling wordt uitgeschakeld"
+        },
+        "fingerprint": {
+          "title": "Inloggen met vingerafdruk inschakelen",
+          "desc": "Ontgrendelen van het vergrendelscherm met een vingerafdruk toestaan"
+        },
+        "background": {
+          "select": "Achtergrond selecteren",
+          "follow": "Achtergrond volgen",
+          "custom": "Aangepast",
+          "follows_hint": "Volgt de achtergrond",
+          "none": "Geen achtergrond geselecteerd"
+        }
       }
     },
     "bar": {
@@ -300,7 +339,7 @@
         "focus": "Focus",
         "sysmon": "Systeemmonitor",
         "timedate": {
-          "name": "Tijd & Datum",
+          "name": "Tijd & datum",
           "style": {
             "name": {
               "classic": "Klassiek",
@@ -324,6 +363,11 @@
         "title": "Breedte van balk",
         "desc": "Stel de breedte van de balk in als percentage"
       },
+      "center_by_edges": {
+        "title": "Centreren op randen",
+        "desc": "Houd gelijke marges links en rechts van de balk aan in plaats van te centreren op de middelste module",
+        "desc_vertical": "Houd gelijke marges boven en onder de balk aan in plaats van te centreren op de middelste module"
+      },
       "workspaces": {
         "title": "Kies het aantal weer te geven werkbladen",
         "disc": "Opmerking: dit heeft geen invloed op het werkelijke aantal werkbladen in de compositor",
@@ -336,10 +380,6 @@
           "title": "Stijl",
           "desc": "Kies de visuele stijl voor werkbladindicatoren"
         }
-      },
-      "opacity": {
-        "title": "Dekking van balk",
-        "desc": "Stel de dekking van de balk in als percentage"
       },
       "style": {
         "title": "Balkstijl",
@@ -529,6 +569,54 @@
           "button": "Interactieve capsuleknop met achtergrond",
           "text": "Strakke tekst en pictogram zonder achtergrond"
         }
+      },
+      "media": {
+        "info_mode": {
+          "title": "Secondary info",
+          "desc": "Choose whether to show the song duration or its author",
+          "duration": "Duration",
+          "author": "Author"
+        },
+        "width": {
+          "title": "Width",
+          "desc": "Width of the song title area"
+        },
+        "show_icon": {
+          "title": "Pictogram tonen",
+          "desc": "Toont de albumhoes of het muziekpictogram"
+        },
+        "show_controls": {
+          "title": "Bediening tonen",
+          "desc": "Toont de knoppen voor vorige, afspelen en volgende"
+        },
+        "preview": {
+          "title": "Titel van het nummer",
+          "author": "Song author"
+        }
+      },
+      "thickness": {
+        "title": "Balkdikte",
+        "desc": "Wijzig de dikte van de balk, modules passen zich aan"
+      },
+      "menu": {
+        "show_settings": {
+          "title": "Instellingenpictogram tonen",
+          "desc": "Toont de knop die de instellingen opent"
+        },
+        "show_launcher": {
+          "title": "Launcherpictogram tonen",
+          "desc": "Toont de zoekknop die de launcher opent"
+        },
+        "style": {
+          "title": "Stijl",
+          "desc": "Kies het uiterlijk van de menumodule",
+          "name": {
+            "button": "Knop",
+            "icon": "Pictogram"
+          },
+          "button": "Interactieve pictogramknoppen met achtergrond",
+          "icon": "Strakke pictogrammen zonder achtergrond"
+        }
       }
     },
     "theme": {
@@ -554,6 +642,18 @@
         "select_wallpaper": "Achtergrond selecteren",
         "no_wallpaper_selected": "Geen achtergrond geselecteerd",
         "select": "Achtergrond"
+      },
+      "element_opacity": {
+        "title": "Elementdekking",
+        "desc": "Dekking van de balk, dock, widgets en alle andere shell-elementen"
+      },
+      "blur_background": {
+        "title": "Een vervaagde achtergrond van het bureaublad toevoegen",
+        "desc": "Vervaagt de achtergrond achter elk element dat transparantie gebruikt",
+        "style": {
+          "blur": "Vervagen",
+          "liquid": "Liquid glass"
+        }
       }
     },
     "file_picker": {
@@ -762,10 +862,6 @@
         "done": "Klaar",
         "empty": "Geen overeenkomende applicaties"
       },
-      "opacity": {
-        "title": "Dekking van dock",
-        "desc": "Achtergronddekking van het dock aanpassen"
-      },
       "override_bounds": {
         "title": "Groottecorrectie buiten schermgrenzen overschrijven",
         "desc": "Behoud aangepaste elementgrootte, zelfs als het dock buiten de schermgrenzen valt"
@@ -820,6 +916,10 @@
       },
       "window_menu": {
         "untitled": "Untitled"
+      },
+      "background": {
+        "title": "Achtergrond achter apps tekenen",
+        "desc": "Toon het dockpaneel achter de app-pictogrammen"
       }
     },
     "lyrics_picker": {
@@ -904,13 +1004,65 @@
       "authenticating": "Verifiëren...",
       "enter_pin": "Voer pincode in"
     },
+    "fingerprint": {
+      "ready": "Raak de sensor aan",
+      "not_recognized": "Vingerafdruk niet herkend",
+      "recognized": "Vingerafdruk herkend"
+    },
     "power": {
       "suspend": "Stand-by",
       "reboot": "Herstarten",
       "power_off": "Uitschakelen"
     },
     "default_user": "Gebruiker",
-    "unknown": "Onbekend"
+    "unknown": "Onbekend",
+    "redactor": {
+      "done": "Klaar",
+      "element": {
+        "avatar": "Avatar",
+        "user": "Gebruiker",
+        "password": "Wachtwoord",
+        "fingerprint": "Vingerafdruk",
+        "notifications": "Meldingen",
+        "clock": "Klok",
+        "lockstatus": "Vergrendelstatus",
+        "keyboard": "Toetsenbord",
+        "battery": "Batterij"
+      },
+      "variant": {
+        "avatar": {
+          "round": "Rond",
+          "rounded": "Afgerond"
+        },
+        "user": {
+          "filled": "Gevuld",
+          "plain": "Eenvoudig"
+        },
+        "password": {
+          "filled": "Gevuld",
+          "glass": "Glas"
+        },
+        "fingerprint": {
+          "classic": "Klassiek",
+          "ring": "Ring",
+          "scanner": "Scanner",
+          "pulse": "Puls",
+          "orbit": "Baan",
+          "liquid": "Vloeistof"
+        },
+        "notifications": {
+          "card": "Kaart",
+          "plain": "Eenvoudig"
+        },
+        "lockstatus": {
+          "filled": "Gevuld",
+          "plain": "Eenvoudig"
+        }
+      },
+      "setting": {
+        "show_text": "Tekst tonen"
+      }
+    }
   },
   "music": {
     "nothing_playing": "Er wordt niets afgespeeld",
@@ -939,7 +1091,27 @@
     "searching_lyrics": "Songteksten zoeken...",
     "no_lyrics": "Geen songtekst gevonden",
     "select_local_file": "Lokaal bestand selecteren",
-    "lyrics": "Songtekst"
+    "lyrics": "Songtekst",
+    "audio": {
+      "title": "Audio",
+      "balance": "Kanaalbalans",
+      "reset": "Resetten",
+      "centered": "Gecentreerd",
+      "left_slightly_favored": "Iets meer links",
+      "right_slightly_favored": "Iets meer rechts",
+      "left_only": "Alleen links",
+      "right_only": "Alleen rechts",
+      "left_favored": "Meer links",
+      "right_favored": "Meer rechts",
+      "test": "Test",
+      "stop_test": "Stoppen",
+      "mono": "Mono-audio",
+      "swap": "L/R omwisselen",
+      "dynamic_range": "Dynamisch bereik",
+      "off": "Uit",
+      "balanced": "Gebalanceerd",
+      "night": "Nacht"
+    }
   },
   "network": {
     "tabs": {
@@ -962,7 +1134,8 @@
     },
     "actions": {
       "unpair": "Ontkoppelen",
-      "scan": "Scannen"
+      "scan": "Scannen",
+      "sign_in": "Inloggen"
     }
   },
   "notifications": {
@@ -1065,11 +1238,33 @@
       "pin": "Vastzetten",
       "unpin": "Losmaken"
     },
+    "calculator": {
+      "history": "Geschiedenis",
+      "no_history": "Nog geen berekeningen",
+      "clear_history": "Geschiedenis wissen",
+      "copied": "Gekopieerd",
+      "deg": "Deg",
+      "rad": "Rad",
+      "grad": "Gon",
+      "inv": "Inv",
+      "mode": {
+        "normal": "Normaal",
+        "advanced": "Geavanceerd"
+      },
+      "clear": "AC",
+      "error": {
+        "syntax": "Ongeldige uitdrukking",
+        "div0": "Delen door nul is niet mogelijk",
+        "domain": "Ongeldige invoer",
+        "paste": "Ongeldig plakken"
+      }
+    },
     "tabs": {
       "draw": "Tekenen",
       "system": "Systeem",
       "timer": "Timer",
       "notes": "Notities",
+      "calculator": "Rekenmachine",
       "tab": "Tabblad"
     }
   },
@@ -1284,6 +1479,8 @@
       "default": "Standaard",
       "material": "Material",
       "materialAnalog": "Material Analoog",
+      "lockscreen": "Vergrendelscherm",
+      "stretched": "Stretched",
       "lumen": "Lumen",
       "lyrics": "Songtekst",
       "simpleLyrics": "Eenvoudige songtekst"
@@ -1329,12 +1526,14 @@
     "msg_desc": "Opdrachten of werkbladwissels verzenden naar de UI-beheerder",
     "ipc_desc": "IPC-aanroepen direct doorsturen naar de shell",
     "kill_desc": "De actieve daemon netjes stoppen",
+    "restart_desc": "De daemon opnieuw starten",
     "options": "Opties:",
     "verbose_desc": "Uitgebreide loguitvoer inschakelen",
     "version_desc": "Versie-informatie weergeven en afsluiten",
     "help_desc": "Dit helpbericht weergeven en afsluiten",
     "examples": "Voorbeelden:",
     "daemon_stopped": "Serpantinum-daemon gestopt.",
+    "daemon_restarted": "Serpantinum-daemon opnieuw gestart.",
     "starting_daemon": "Daemon niet actief. serpantinumd wordt op de achtergrond gestart...",
     "error_missing_qml": "Fout: ontbrekend doel om te starten.",
     "launch_usage": "Gebruik: serpantinum launch <start|widgetredactor> [argumenten...]",
@@ -1483,7 +1682,11 @@
     "deploy": {
       "configuring_sddm": "SDDM-inlogbeheerder configureren...",
       "disabling_dm": "-> Conflicterende inlogbeheerder uitschakelen: {dm}",
-      "sddm_success": "-> SDDM Material You-thema geïnstalleerd en service ingeschakeld [ OK ]"
+      "sddm_success": "-> SDDM Material You-thema geïnstalleerd en service ingeschakeld [ OK ]",
+      "sddm_no_wayland_compositor": "Geen ondersteunde Wayland-compositor voor het inlogscherm (kwin_wayland/weston) gevonden, X11 wordt gebruikt voor SDDM.",
+      "sddm_no_xorg": "Xorg niet gevonden, {compositor} wordt gebruikt voor SDDM.",
+      "sddm_no_backend": "Noch Xorg noch een ondersteunde Wayland-compositor voor het inlogscherm (kwin_wayland/weston) is gevonden in /usr/local/bin, /usr/bin of /bin.",
+      "sddm_skipped": "SDDM-configuratie overgeslagen: geen bruikbare displayserver of inlogcompositor gevonden. De huidige displaymanager blijft ongewijzigd."
     }
   },
   "translator": {

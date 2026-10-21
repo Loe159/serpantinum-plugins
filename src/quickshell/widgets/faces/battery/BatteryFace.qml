@@ -113,11 +113,17 @@ Item {
     Rectangle {
         id: bgContainer
         anchors.fill: parent
-        color: ThemeBackend.surface0
+        color: Qt.alpha(ThemeBackend.surface0, ThemeBackend.elementOpacity)
         radius: ThemeBackend.borderRadius
         border.width: 1
         border.color: Qt.rgba(ThemeBackend.text.r, ThemeBackend.text.g, ThemeBackend.text.b, 0.06)
         clip: true
+
+        WallpaperBlur {
+            z: -1
+            anchors.fill: parent
+            radius: parent.radius
+        }
 
         FluidWave {
             id: waveCanvas
@@ -144,7 +150,7 @@ Item {
                 spacing: Scaler.s(14)
 
                 Text {
-                    font.family: "Iosevka Nerd Font"
+                    font.family: ThemeBackend.iconFont
                     font.pixelSize: Math.max(Scaler.s(22), Math.min(Scaler.s(36), root.height * 0.36))
                     color: bRoot.iconColor
                     text: {
