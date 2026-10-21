@@ -40,7 +40,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: rootObj.s(28)
-        spacing: rootObj.s(18)
+        spacing: rootObj.s(16)
 
         RowLayout {
             Layout.fillWidth: true
@@ -107,16 +107,17 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: rootObj.s(112)
+            implicitHeight: installContent.implicitHeight + rootObj.s(28)
             radius: ThemeBackend.borderRadius
             color: Qt.alpha(ThemeBackend.surface0, 0.55)
             border.width: 1
             border.color: ThemeBackend.surface1
 
             ColumnLayout {
+                id: installContent
                 anchors.fill: parent
                 anchors.margins: rootObj.s(14)
-                spacing: rootObj.s(10)
+                spacing: rootObj.s(12)
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -141,6 +142,7 @@ Item {
 
                     Text {
                         text: "Supports one root plugin or multiple plugins in subfolders"
+                        visible: pluginsRoot.width > rootObj.s(730)
                         font.family: ThemeBackend.fontFamily
                         font.pixelSize: rootObj.s(10)
                         color: ThemeBackend.overlay1
@@ -187,7 +189,7 @@ Item {
                     Layout.fillWidth: true
                     visible: PluginManager.installMessage !== ""
                     text: PluginManager.installMessage
-                    elide: Text.ElideRight
+                    wrapMode: Text.Wrap
                     font.family: ThemeBackend.fontFamily
                     font.pixelSize: rootObj.s(10)
                     color: PluginManager.installing
@@ -223,7 +225,7 @@ Item {
                 ColumnLayout {
                     id: pluginColumn
                     width: pluginList.width - (pluginList.contentHeight > pluginList.height ? rootObj.s(8) : 0)
-                    spacing: rootObj.s(10)
+                    spacing: rootObj.s(8)
 
                     Repeater {
                         model: PluginManager.plugins
@@ -237,7 +239,7 @@ Item {
                                 return PluginManager.isEnabled(pluginData);
                             }
                             Layout.fillWidth: true
-                            implicitHeight: rootObj.s(86)
+                            implicitHeight: rootObj.s(76)
                             radius: ThemeBackend.borderRadius
                             color: pluginMouse.hovered
                                 ? Qt.alpha(ThemeBackend.surface1, 0.62)
@@ -247,12 +249,14 @@ Item {
 
                             Behavior on color { ColorAnimation { duration: 180 } }
                             Behavior on border.color { ColorAnimation { duration: 180 } }
+                            scale: pluginMouse.hovered ? 1.008 : 1
+                            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                             HoverHandler { id: pluginMouse }
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: rootObj.s(13)
+                                anchors.margins: rootObj.s(12)
                                 spacing: rootObj.s(8)
 
                                 RowLayout {
