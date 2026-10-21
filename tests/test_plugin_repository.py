@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import pathlib
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -77,6 +78,83 @@ class RepoTests(unittest.TestCase):
         refresh = plugin_repo.refresh(self.target, 1)
         self.assertEqual(refresh["installed"], ["third-plugin"])
         self.assertEqual(json.loads((old / "plugin.json").read_text())["version"], "old-local")
+
+    def test_pristine_unmanaged_plugin_is_adopted_with_persistent_backup(self):
+        source_plugin = self.source / "ai-agents"
+        self.plugin(source_plugin, "ai-agents", version="0.1.0")
+        self.commit()
+        legacy = self.target / "ai-agents"
+        shutil.copytree(source_plugin, legacy)
+
+        self.plugin(source_plugin, "ai-agents", version="0.1.2")
+        self.plugin(self.source / "lpic-daily", "lpic-daily", version="0.1.4")
+        self.commit()
+        result = plugin_repo.sync_repository(str(self.source), self.target, 1)
+
+        self.assertIn("ai-agents", result["updated"])
+        self.assertIn("lpic-daily", result["installed"])
+        self.assertEqual(json.loads((legacy / "plugin.json").read_text())["version"], "0.1.2")
+        self.assertTrue(plugin_repo.metadata(legacy)["managed"])
+        backups = list(self.target.glob("ai-agents.backup.*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(json.loads((backups[0] / "plugin.json").read_text())["version"], "0.1.0")
+        self.assertEqual(plugin_repo.scan_plugins([(self.target, "user")], 1)["errors"], [])
+        self.assertEqual(plugin_repo.sync_repository(str(self.source), self.target, 1)["unchanged"],
+                         ["ai-agents", "lpic-daily"])
+
+    def test_legacy_migration_rolls_back_on_later_install_failure(self):
+        source_plugin = self.source / "ai-agents"
+        self.plugin(source_plugin, "ai-agents", version="0.1.0")
+        self.commit()
+        old = self.target / "ai-agents"
+        shutil.copytree(source_plugin, old)
+        self.plugin(source_plugin, "ai-agents", version="0.1.2")
+        self.plugin(self.source / "lpic-daily", "lpic-daily")
+        self.commit()
+
+        rename = pathlib.Path.rename
+
+        def interrupt_second_install(path, target):
+            if path.name == "lpic-daily" and path.parent.name == "staged":
+                raise OSError("simulated installation error")
+            return rename(path, target)
+
+        with patch.object(pathlib.Path, "rename", interrupt_second_install):
+            with self.assertRaisesRegex(OSError, "simulated"):
+                plugin_repo.sync_repository(str(self.source), self.target, 1)
+
+        self.assertEqual(json.loads((old / "plugin.json").read_text())["version"], "0.1.0")
+        self.assertFalse((self.target / "lpic-daily").exists())
+        self.assertEqual(list(self.target.glob("ai-agents.backup.*")), [])
+
+    def test_matching_version_but_modified_unmanaged_plugin_stays_untouched(self):
+        source_plugin = self.source / "ai-agents"
+        self.plugin(source_plugin, "ai-agents", version="0.1.0")
+        self.commit()
+        legacy = self.target / "ai-agents"
+        shutil.copytree(source_plugin, legacy)
+        (legacy / "Plugin.qml").write_text("local user customization", encoding="utf-8")
+        self.plugin(source_plugin, "ai-agents", version="0.1.2")
+        self.commit()
+
+        result = plugin_repo.sync_repository(str(self.source), self.target, 1)
+        self.assertEqual(result["updated"], [])
+        self.assertIn("ai-agents (existing/unmanaged)", result["skipped"])
+        self.assertEqual((legacy / "Plugin.qml").read_text(), "local user customization")
+        self.assertFalse(list(self.target.glob("ai-agents.backup.*")))
+
+    def test_pristine_unmanaged_monoplugin_can_be_adopted(self):
+        self.plugin(self.source, "single", version="0.1.0")
+        self.commit()
+        legacy = self.target / "single"
+        shutil.copytree(self.source, legacy, ignore=shutil.ignore_patterns(".git"))
+        self.plugin(self.source, "single", version="0.1.2")
+        self.commit()
+
+        result = plugin_repo.sync_repository(str(self.source), self.target, 1)
+        self.assertEqual(result["updated"], ["single"])
+        self.assertEqual(json.loads((legacy / "plugin.json").read_text())["version"], "0.1.2")
+        self.assertEqual(len(list(self.target.glob("single.backup.*"))), 1)
 
     def test_invalid_subplugin_aborts_without_partial_install(self):
         self.plugin(self.source / "valid", "valid")

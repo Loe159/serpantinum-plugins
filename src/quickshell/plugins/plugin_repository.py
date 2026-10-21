@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """Install and refresh independent Serpantinum plugins from Git repositories.
 
-Untracked legacy installs are never overwritten. Tracked installs are replaced
-only when their recorded content hash still matches, so user edits survive.
+Untracked legacy installs are migrated only if identical to a known Git revision,
+with the original retained as a backup. Tracked installs are replaced only when
+their recorded content hash still matches, so user edits survive.
 """
 import argparse
+import datetime
 import hashlib
+import io
 import json
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
+import uuid
 
 SOURCE_FILE = ".serpantinum-source.json"
 
@@ -177,9 +182,95 @@ def clone(url, destination):
         raise ValueError((result.stderr or result.stdout or "git clone failed").strip().splitlines()[-1])
 
 
+def pristine_legacy_install(repo, source, dest, identifier):
+    """Only adopt an untracked plugin if every file matches an upstream revision.
+
+    Compare complete directory contents, not just the version in plugin.json.
+    Never adopt a Git checkout, an install with source metadata, or symlinks.
+    """
+    if (dest / SOURCE_FILE).exists() or (dest / ".git").exists():
+        return False
+    try:
+        installed = json.loads((dest / "plugin.json").read_text(encoding="utf-8"))
+        version = installed.get("version")
+        if installed.get("id") != identifier or not isinstance(version, str):
+            return False
+        installed_digest = digest(dest)
+        relative = source.relative_to(repo)
+        pathspec = relative.as_posix()
+        manifest = "plugin.json" if pathspec == "." else pathspec + "/plugin.json"
+
+        def git(*args, timeout=40):
+            return subprocess.run(
+                ["git", "-C", str(repo), *args],
+                capture_output=True, timeout=timeout, check=False,
+            )
+
+        shallow = git("rev-parse", "--is-shallow-repository")
+        if shallow.returncode != 0:
+            return False
+        if shallow.stdout.strip() == b"true":
+            # Bound the amount of history fetched for legacy migration.
+            fetched = git("fetch", "--deepen=40", "origin", timeout=100)
+            if fetched.returncode != 0:
+                return False
+        history = git("rev-list", "-n", "40", "HEAD", "--", pathspec)
+        if history.returncode != 0:
+            return False
+
+        for commit in history.stdout.decode("ascii").splitlines():
+            prior = git("show", commit + ":" + manifest)
+            if prior.returncode:
+                continue
+            try:
+                old_manifest = json.loads(prior.stdout)
+            except ValueError:
+                continue
+            if old_manifest.get("id") != identifier or old_manifest.get("version") != version:
+                continue
+            args = ["archive", "--format=tar", commit]
+            if pathspec != ".":
+                args.append(pathspec)
+            archived = git(*args, timeout=100)
+            if archived.returncode:
+                continue
+            files = []
+            with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as bundle:
+                for member in bundle:
+                    if member.isdir():
+                        continue
+                    if not member.isfile():
+                        files = []
+                        break
+                    path = pathlib.PurePosixPath(member.name)
+                    if pathspec != ".":
+                        path = path.relative_to(pathlib.PurePosixPath(pathspec))
+                    if path.name == SOURCE_FILE or ".git" in path.parts:
+                        continue
+                    entry = bundle.extractfile(member)
+                    if entry is None:
+                        files = []
+                        break
+                    files.append((path.as_posix().encode("utf-8"), entry.read()))
+            if not files:
+                continue
+            old_digest = hashlib.sha256()
+            for path, data in sorted(files):
+                old_digest.update(len(path).to_bytes(8, "big"))
+                old_digest.update(path)
+                old_digest.update(len(data).to_bytes(8, "big"))
+                old_digest.update(data)
+            if old_digest.hexdigest() == installed_digest:
+                return True
+    except (OSError, ValueError, subprocess.SubprocessError, tarfile.TarError):
+        return False
+    return False
+
+
 def sync_repository(url, root, host_api):
     root.mkdir(parents=True, exist_ok=True)
     installed, updated, unchanged, skipped = [], [], [], []
+    legacy_adoptions = set()
     with tempfile.TemporaryDirectory(prefix=".plugin-sync-", dir=root) as temp_name:
         temp = pathlib.Path(temp_name)
         repo = temp / "repo"
@@ -196,12 +287,15 @@ def sync_repository(url, root, host_api):
             if dest.exists():
                 saved = metadata(dest)
                 if not saved or saved.get("url") != url or saved.get("managed") is not True:
-                    skipped.append(identifier + " (existing/unmanaged)")
-                    continue
-                if digest(dest) != saved.get("digest"):
+                    if pristine_legacy_install(repo, folder, dest, identifier):
+                        legacy_adoptions.add(identifier)
+                    else:
+                        skipped.append(identifier + " (existing/unmanaged)")
+                        continue
+                elif digest(dest) != saved.get("digest"):
                     skipped.append(identifier + " (local modifications)")
                     continue
-                if digest(dest) == digest(folder):
+                elif digest(dest) == digest(folder):
                     unchanged.append(identifier)
                     continue
             staged = staged_root / identifier
@@ -220,6 +314,10 @@ def sync_repository(url, root, host_api):
             for identifier, staged, dest in changes:
                 backup = backup_root / identifier
                 was_existing = dest.exists()
+                persistent_backup = identifier in legacy_adoptions
+                if persistent_backup:
+                    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+                    backup = root / f"{identifier}.backup.{stamp}-{uuid.uuid4().hex[:8]}"
                 if was_existing:
                     dest.rename(backup)
                 try:
@@ -228,6 +326,7 @@ def sync_repository(url, root, host_api):
                     if was_existing:
                         backup.rename(dest)
                     raise
+                # Rollback must restore either kind of backup on later failures.
                 processed.append((dest, backup if was_existing else None))
                 (updated if was_existing else installed).append(identifier)
         except Exception:
