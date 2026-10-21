@@ -105,6 +105,27 @@ class RepoTests(unittest.TestCase):
             plugin_repo.sync_repository(str(self.source), self.target, 1)
         self.assertFalse((self.target / "single").exists())
 
+    def test_optional_icon_image_valid_and_missing_rejected(self):
+        self.plugin(self.source, "single")
+        manifest = self.source / "plugin.json"
+        data = json.loads(manifest.read_text())
+        data["iconImage"] = "assets/lpi.svg"
+        manifest.write_text(json.dumps(data), encoding="utf-8")
+        icon = self.source / "assets/lpi.svg"
+        icon.parent.mkdir(parents=True, exist_ok=True)
+        icon.write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+        self.commit()
+
+        result = plugin_repo.sync_repository(str(self.source), self.target, 1)
+        self.assertEqual(result["installed"], ["single"])
+        self.assertTrue((self.target / "single/assets/lpi.svg").is_file())
+
+        data["iconImage"] = "../../outside.svg"
+        manifest.write_text(json.dumps(data), encoding="utf-8")
+        self.commit()
+        with self.assertRaisesRegex(ValueError, "iconImage not found"):
+            plugin_repo.sync_repository(str(self.source), self.path / "other-install", 1)
+
     def test_refresh_without_tracked_source(self):
         self.assertTrue(plugin_repo.refresh(self.target, 1)["warnings"])
 
