@@ -22,12 +22,17 @@ import uuid
 SOURCE_FILE = ".serpantinum-source.json"
 
 
+def generated_file(path):
+    """Python bytecode is runtime output, not a plugin customization."""
+    return "__pycache__" in path.parts and path.suffix == ".pyc"
+
+
 def digest(folder):
     result = hashlib.sha256()
     for path in sorted(folder.rglob("*")):
         if path.is_symlink():
             raise ValueError(f"Symlinks are not supported: {path}")
-        if not path.is_file() or path.name == SOURCE_FILE or ".git" in path.parts:
+        if not path.is_file() or path.name == SOURCE_FILE or ".git" in path.parts or generated_file(path):
             continue
         relative = path.relative_to(folder).as_posix().encode("utf-8")
         result.update(len(relative).to_bytes(8, "big"))
@@ -89,6 +94,10 @@ def manifests(repo, host_api):
     return found
 
 
+def backup_directory(folder):
+    return bool(re.search(r"(?:[.]backup(?:[.].*)?|[.]bak(?:[.].*)?|[-_]backup(?:[-_].*)?)$", folder.name, re.I))
+
+
 def scan_plugins(roots, host_api):
     """Discover plugins; never let a backup shadow an active installation."""
     plugins = {}
@@ -100,7 +109,7 @@ def scan_plugins(roots, host_api):
         for manifest in sorted(base.glob("*/plugin.json")):
             folder = manifest.parent
             # A backup kept next to a plugin is not an installable plugin.
-            if re.search(r"(?:[.]backup(?:[.].*)?|[.]bak(?:[.].*)?|[-_]backup(?:[-_].*)?)$", folder.name, re.I):
+            if backup_directory(folder):
                 continue
             try:
                 data = json.loads(manifest.read_text(encoding="utf-8"))
@@ -245,7 +254,7 @@ def pristine_legacy_install(repo, source, dest, identifier):
                     path = pathlib.PurePosixPath(member.name)
                     if pathspec != ".":
                         path = path.relative_to(pathlib.PurePosixPath(pathspec))
-                    if path.name == SOURCE_FILE or ".git" in path.parts:
+                    if path.name == SOURCE_FILE or ".git" in path.parts or generated_file(path):
                         continue
                     entry = bundle.extractfile(member)
                     if entry is None:
@@ -267,7 +276,11 @@ def pristine_legacy_install(repo, source, dest, identifier):
     return False
 
 
-def sync_repository(url, root, host_api):
+def sync_repository(url, root, host_api, *, replace_plugins=()):
+    """Explicit replacement retains the complete previous install as a backup.
+
+    Automatic refresh never opts into replacement of customized installations.
+    """
     root.mkdir(parents=True, exist_ok=True)
     installed, updated, unchanged, skipped = [], [], [], []
     legacy_adoptions = set()
@@ -276,6 +289,9 @@ def sync_repository(url, root, host_api):
         repo = temp / "repo"
         clone(url, repo)
         sources = manifests(repo, host_api)
+        unknown = set(replace_plugins) - sources.keys()
+        if unknown:
+            raise ValueError("Unknown replacement plugin ids: " + ", ".join(sorted(unknown)))
         staged_root = temp / "staged"
         staged_root.mkdir()
         changes = []
@@ -286,7 +302,9 @@ def sync_repository(url, root, host_api):
                 continue
             if dest.exists():
                 saved = metadata(dest)
-                if not saved or saved.get("url") != url or saved.get("managed") is not True:
+                if identifier in replace_plugins:
+                    legacy_adoptions.add(identifier)
+                elif not saved or saved.get("url") != url or saved.get("managed") is not True:
                     if pristine_legacy_install(repo, folder, dest, identifier):
                         legacy_adoptions.add(identifier)
                     else:
@@ -344,7 +362,7 @@ def refresh(root, host_api):
     urls = set()
     if root.is_dir():
         for folder in root.iterdir():
-            if not folder.is_dir() or folder.is_symlink():
+            if not folder.is_dir() or folder.is_symlink() or backup_directory(folder):
                 continue
             saved = metadata(folder)
             if saved and saved.get("managed") and saved.get("url"):
@@ -369,7 +387,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=("install", "refresh", "scan"))
     parser.add_argument("args", nargs="+")
+    parser.add_argument("--replace-plugin", action="append", default=[], metavar="ID",
+                        help="explicitly replace this plugin, keeping a persistent backup (install only)")
     args = parser.parse_args(argv)
+    if args.replace_plugin and args.action != "install":
+        parser.error("--replace-plugin requires install")
     try:
         if args.action == "scan":
             if len(args.args) != 3:
@@ -386,7 +408,8 @@ def main(argv=None):
             url, path, api = args.args
             if not url.strip():
                 raise ValueError("Enter a Git repository URL")
-            result = sync_repository(url.strip(), pathlib.Path(path).expanduser(), int(api))
+            result = sync_repository(url.strip(), pathlib.Path(path).expanduser(), int(api),
+                                     replace_plugins=args.replace_plugin)
         else:
             if len(args.args) != 2:
                 parser.error("refresh requires root host_api")

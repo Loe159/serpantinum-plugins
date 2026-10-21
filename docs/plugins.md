@@ -149,3 +149,25 @@ Plugins are trusted QML code and are **not sandboxed**. A plugin loaded by Serpa
 - No first-class desktop-widget plugin API yet.
 
 The bar API is intentionally host-driven so future plugins inherit Serpantinum behavior without duplicating shell styling or layout logic.
+
+## Recovering an unmanaged or customized installation
+
+Refresh deliberately preserves an unmanaged directory unless all its source files
+match a known Git revision. A matching version number alone is insufficient.
+Python bytecode (`__pycache__/*.pyc`) is runtime output and does not affect this check
+or subsequent managed updates; other extra files and source edits remain protected.
+
+After reviewing local differences, explicitly replace one selected plugin with:
+
+```sh
+python3 ~/.local/share/serpantinum/src/quickshell/plugins/plugin_repository.py \
+  install https://github.com/OWNER/REPO \
+  ~/.config/serpantinum/plugins 1 --replace-plugin PLUGIN-ID
+```
+
+This retains the entire previous directory as `PLUGIN-ID.backup.TIMESTAMP-SUFFIX`
+beside the installation, then installs and tracks the repository version. Backups
+are excluded from discovery and Refresh. Other customized plugins remain protected.
+The option works for both single-plugin and multi-plugin repositories. Settings
+outside the plugin directory remain unchanged; review and port backed-up source
+customizations separately. Reload Serpantinum after using the command line.

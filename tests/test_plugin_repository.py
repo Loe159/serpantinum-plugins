@@ -156,6 +156,56 @@ class RepoTests(unittest.TestCase):
         self.assertEqual(json.loads((legacy / "plugin.json").read_text())["version"], "0.1.2")
         self.assertEqual(len(list(self.target.glob("single.backup.*"))), 1)
 
+    def test_runtime_bytecode_does_not_block_migration_or_refresh(self):
+        self.plugin(self.source, "single", version="1")
+        self.commit()
+        legacy = self.target / "single"
+        shutil.copytree(self.source, legacy, ignore=shutil.ignore_patterns(".git"))
+        cache = legacy / "__pycache__/helper.cpython-314.pyc"
+        cache.parent.mkdir()
+        cache.write_bytes(b"generated at runtime")
+        self.plugin(self.source, "single", version="2")
+        self.commit()
+        self.assertEqual(plugin_repo.sync_repository(str(self.source), self.target, 1)["updated"], ["single"])
+        cache.parent.mkdir()
+        cache.write_bytes(b"regenerated")
+        self.assertEqual(plugin_repo.refresh(self.target, 1)["unchanged"], ["single"])
+        # Files other than bytecode remain protected, even in cache directories.
+        custom = cache.parent / "custom.py"
+        custom.write_text("user code")
+        self.assertIn("single (local modifications)", plugin_repo.refresh(self.target, 1)["skipped"])
+
+    def test_explicit_replacement_backs_up_custom_files_and_only_selected_plugin(self):
+        for identifier in ("single", "other"):
+            self.plugin(self.source / identifier, identifier, version="2")
+            self.plugin(self.target / identifier, identifier, version="custom")
+        self.commit()
+        old_digest = plugin_repo.digest(self.target / "single")
+        result = plugin_repo.sync_repository(str(self.source), self.target, 1,
+                                             replace_plugins=["single"])
+        self.assertEqual(result["updated"], ["single"])
+        self.assertIn("other (existing/unmanaged)", result["skipped"])
+        backup, = self.target.glob("single.backup.*")
+        self.assertEqual(plugin_repo.digest(backup), old_digest)
+        self.assertEqual(plugin_repo.refresh(self.target, 1)["unchanged"], ["single"])
+
+    def test_refresh_does_not_contact_sources_from_backups(self):
+        backup = self.target / "single.backup.saved"
+        self.plugin(backup, "single")
+        (backup / plugin_repo.SOURCE_FILE).write_text(json.dumps({
+            "managed": True, "url": "https://invalid.example/old-source"}))
+        with patch.object(plugin_repo, "sync_repository") as sync:
+            plugin_repo.refresh(self.target, 1)
+        sync.assert_not_called()
+
+    def test_unknown_explicit_replacement_aborts_before_installation(self):
+        self.plugin(self.source, "single")
+        self.commit()
+        with self.assertRaisesRegex(ValueError, "Unknown replacement"):
+            plugin_repo.sync_repository(str(self.source), self.target, 1,
+                                        replace_plugins=["typo"])
+        self.assertFalse((self.target / "single").exists())
+
     def test_invalid_subplugin_aborts_without_partial_install(self):
         self.plugin(self.source / "valid", "valid")
         self.plugin(self.source / "invalid", "invalid", valid=False)
