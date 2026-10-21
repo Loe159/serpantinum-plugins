@@ -69,6 +69,8 @@ def manifests(repo, host_api):
             valid_file(folder, data["barEntry"], f"{identifier} barEntry")
         if data.get("settingsEntry"):
             valid_file(folder, data["settingsEntry"], f"{identifier} settingsEntry")
+        if data.get("iconImage"):
+            valid_file(folder, data["iconImage"], f"{identifier} iconImage")
         entries = data.get("barEntries", [])
         if not isinstance(entries, list):
             raise ValueError(f"{identifier} barEntries must be an array")
