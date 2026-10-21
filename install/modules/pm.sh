@@ -3,6 +3,17 @@
 PM_MODULES_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/pm"
 
 detect_package_manager() {
+    # A Fedora system may also have pacman installed; choose by OS family first.
+    if [ -r /etc/os-release ]; then
+        local distro_id distro_like
+        distro_id=$(awk -F= '/^ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
+        distro_like=$(awk -F= '/^ID_LIKE=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
+        case " $distro_id $distro_like " in
+            *" fedora "*) echo "dnf"; return 0 ;;
+            *" arch "*) echo "pacman"; return 0 ;;
+        esac
+    fi
+
     if command -v pacman &>/dev/null; then
         echo "pacman"
     elif command -v dnf &>/dev/null; then
