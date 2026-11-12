@@ -230,7 +230,7 @@ Rectangle {
 
                                 Text {
                                     visible: !popup.compact
-                                    text: I18n.t("guide.tabs." + (tabDelegate.modelData.key || tabDelegate.modelData.id).toLowerCase(), tabDelegate.modelData.name || tabDelegate.modelData.id)
+                                    text: popup.tabTitle(tabDelegate.modelData)
                                     font.family: ThemeBackend.fontFamily
                                     font.weight: Font.Medium
                                     font.pixelSize: popup.s(13)
@@ -354,7 +354,7 @@ Rectangle {
 
                                                 Text {
                                                     visible: !popup.compact
-                                                    text: I18n.t("guide.tabs." + (sub.modelData.key || sub.modelData.id).toLowerCase(), sub.modelData.name || sub.modelData.id)
+                                                    text: popup.tabTitle(sub.modelData)
                                                     font.family: ThemeBackend.fontFamily
                                                     font.weight: Font.Medium
                                                     font.pixelSize: popup.s(13)

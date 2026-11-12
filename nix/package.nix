@@ -13,6 +13,7 @@
 , file
 , gpu-screen-recorder
 , grim
+, git
 , imagemagick
 , jq
 , kitty
@@ -49,6 +50,7 @@ let
     file
     gpu-screen-recorder
     grim
+    git
     imagemagick
     jq
     kitty
