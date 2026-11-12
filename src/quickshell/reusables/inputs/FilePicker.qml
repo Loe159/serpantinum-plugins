@@ -33,6 +33,7 @@ Popup {
     property var nameFilters: ["*"]
     property string titleText: typeof I18n !== "undefined" ? I18n.t("guide.file_picker.title") : ""
     property string doneButtonText: typeof I18n !== "undefined" ? I18n.t("guide.file_picker.done") : "Done"
+    property bool selectFolder: false
     property var places: []
     property Component previewComponent: null
     property bool showPreview: false
@@ -119,7 +120,14 @@ Popup {
                 let fp = folderModel.get(listView.currentIndex, "filePath");
                 let fn = folderModel.get(listView.currentIndex, "fileName");
                 if (obj) {
-                    pickerRoot.gotoFolder(fp);
+                    if (pickerRoot.selectFolder) {
+                        pickerRoot.selectedFilePath = pickerRoot.getAbsolutePath(fp);
+                        try { pickerRoot.selectedFileName = decodeURIComponent(fn); }
+                        catch (e) { pickerRoot.selectedFileName = fn; }
+                        pickerRoot.confirmSelection();
+                    } else {
+                        pickerRoot.gotoFolder(fp);
+                    }
                 } else {
                     pickerRoot.selectedFilePath = pickerRoot.getAbsolutePath(fp);
                     try {
@@ -187,16 +195,18 @@ Popup {
 
         if (p !== "") {
             selectedFilePath = p;
-            let parts = p.split("/");
+            let parts = p.split("/").filter(part => part !== "");
             try {
-                selectedFileName = decodeURIComponent(parts[parts.length - 1]);
+                selectedFileName = decodeURIComponent(parts.length > 0 ? parts[parts.length - 1] : "/");
             } catch (e) {
-                selectedFileName = parts[parts.length - 1];
+                selectedFileName = parts.length > 0 ? parts[parts.length - 1] : "/";
             }
 
-            let dir = parts.slice(0, -1).join("/");
-            if (dir !== "") {
-                lastVisitedFolder = "file://" + dir;
+            if (selectFolder) {
+                lastVisitedFolder = "file://" + p;
+            } else {
+                let dir = p.split("/").slice(0, -1).join("/");
+                if (dir !== "") lastVisitedFolder = "file://" + dir;
             }
         } else {
             selectedFilePath = "";
@@ -210,6 +220,11 @@ Popup {
         }
 
         folderModel.folder = lastVisitedFolder || "file:///";
+        if (selectFolder && selectedFilePath === "") {
+            selectedFilePath = getAbsolutePath(folderModel.folder);
+            let folderParts = selectedFilePath.split("/").filter(part => part !== "");
+            selectedFileName = folderParts.length > 0 ? folderParts[folderParts.length - 1] : "/";
+        }
         updateNameFilters();
         open();
 
@@ -227,8 +242,14 @@ Popup {
         }
         folderModel.folder = normalizedPath;
         lastVisitedFolder = normalizedPath;
-        selectedFilePath = "";
-        selectedFileName = "";
+        if (selectFolder) {
+            selectedFilePath = getAbsolutePath(normalizedPath);
+            let parts = selectedFilePath.split("/").filter(p => p !== "");
+            selectedFileName = parts.length > 0 ? parts[parts.length - 1] : "/";
+        } else {
+            selectedFilePath = "";
+            selectedFileName = "";
+        }
     }
 
     function updateNameFilters() {
@@ -630,7 +651,7 @@ Popup {
                             id: folderModel
                             showDirsFirst: true
                             showDotAndDotDot: false
-                            showFiles: true
+                            showFiles: !pickerRoot.selectFolder
                             showDirs: true
                             showHidden: false
                             caseSensitive: false
@@ -687,7 +708,13 @@ Popup {
                                     listView.forceActiveFocus();
                                     listView.currentIndex = index;
                                     if (fileIsDir) {
-                                        pickerRoot.gotoFolder(filePath);
+                                        if (pickerRoot.selectFolder) {
+                                            pickerRoot.selectedFilePath = pickerRoot.getAbsolutePath(filePath);
+                                            try { pickerRoot.selectedFileName = decodeURIComponent(fileName); }
+                                            catch (e) { pickerRoot.selectedFileName = fileName; }
+                                        } else {
+                                            pickerRoot.gotoFolder(filePath);
+                                        }
                                     } else {
                                         pickerRoot.selectedFilePath = pickerRoot.getAbsolutePath(filePath);
                                         try {
@@ -748,6 +775,7 @@ Popup {
                             return pickerRoot.selectedFileName;
                         }
                     }
+                    if (pickerRoot.selectFolder) return "No folder selected";
                     return typeof I18n !== "undefined" ? I18n.t("guide.file_picker.no_file_selected") : "No file selected";
                 }
                 color: pickerRoot.selectedFileName !== "" ? ThemeBackend.text : ThemeBackend.subtext0

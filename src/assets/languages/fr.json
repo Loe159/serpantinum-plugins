@@ -48,7 +48,9 @@
       "theme_wallpapers": "Fonds d'écran",
       "general_main": "Général",
       "general_presets": "Préréglages",
-      "general_weather": "Météo"
+      "general_weather": "Météo",
+      "plugins": "Plugins",
+      "plugins_overview": "Vue d'ensemble"
     },
     "launcher": {
       "position": {

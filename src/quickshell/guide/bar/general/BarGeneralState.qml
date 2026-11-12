@@ -181,6 +181,20 @@ GuideTab {
     }
 
     function getModuleInfo(id) {
+        if (PluginManager.isBarModuleId(id)) {
+            let plugin = PluginManager.pluginForBarModule(id);
+            let entry = PluginManager.barEntryForModule(id);
+            let label = entry ? (entry.name || entry.label || entry.id) : (plugin ? (plugin.name || plugin.id) : id);
+            return {
+                "moduleId": id,
+                "moduleLabel": label,
+                "moduleIcon": (entry && entry.icon) || (plugin && plugin.icon) || "󰏗",
+                "moduleColor": colorToString(ThemeBackend.mauve),
+                "isPlaceholder": false,
+                "placeholderWidth": 0,
+                "groupId": ""
+            };
+        }
         let labels = {
             "left": I18n.t("guide.bar.modules.actions"),
             "workspaces": I18n.t("guide.bar.modules.workspaces.name"),
@@ -343,7 +357,7 @@ GuideTab {
         add(c, centerModel);
         add(r, rightModel);
 
-        let allKeys = BarModuleRegistry.moduleIds();
+        let allKeys = BarModuleRegistry.moduleIds().concat(PluginManager.barModules.map(m => m.moduleId));
         for (let i = 0; i < allKeys.length; i++) {
             if (!used[allKeys[i]]) availableModel.append(getModuleInfo(allKeys[i]));
         }
@@ -716,6 +730,11 @@ GuideTab {
     Component.onCompleted: {
         syncSettings();
         loadModuleModels();
+    }
+
+    Connections {
+        target: PluginManager
+        function onRefreshed(count) { barTabRoot.loadModuleModels(); }
     }
 
     Connections {

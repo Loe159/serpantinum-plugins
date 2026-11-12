@@ -48,7 +48,9 @@
       "theme_wallpapers": "Wallpapers",
       "general_main": "General",
       "general_presets": "Presets",
-      "general_weather": "Weather"
+      "general_weather": "Weather",
+      "plugins": "Plugins",
+      "plugins_overview": "Overview"
     },
     "launcher": {
       "position": {

@@ -57,6 +57,7 @@ ShellRoot {
     Polkit {}
     WellbeingLimitOverlay {}
     PopoutManager {}
+    PluginHost {}
 
     Loader {
         active: dockEnabled

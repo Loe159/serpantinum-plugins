@@ -1,0 +1,37 @@
+name: Plugin repository sync
+
+on:
+  push:
+    paths:
+      - "src/quickshell/plugins/PluginManager.qml"
+      - "src/quickshell/plugins/plugin_repository.py"
+      - "src/quickshell/guide/PluginsTab.qml"
+      - "tests/test_plugin_repository.py"
+      - ".github/workflows/plugin-repository.yml"
+  pull_request:
+    paths:
+      - "src/quickshell/plugins/PluginManager.qml"
+      - "src/quickshell/plugins/plugin_repository.py"
+      - "src/quickshell/guide/PluginsTab.qml"
+      - "tests/test_plugin_repository.py"
+      - ".github/workflows/plugin-repository.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check diff and Python syntax
+        run: |
+          git diff --check
+          python3 -m py_compile src/quickshell/plugins/plugin_repository.py
+          python3 -m unittest discover -s tests -p test_plugin_repository.py -v
+      - name: Parse modified QML
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qt6-declarative-dev-tools
+          /usr/lib/qt6/bin/qmlformat src/quickshell/plugins/PluginManager.qml >/dev/null
+          /usr/lib/qt6/bin/qmlformat src/quickshell/guide/PluginsTab.qml >/dev/null

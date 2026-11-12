@@ -133,10 +133,12 @@ Item {
 
                     function ensureLoaded() {
                         if (status === Loader.Null && subData.file) {
-                            setSource(subData.file, {
-                                "rootObj": popup,
-                                "tabIndex": tabContentWrapper.parentTabIndex
-                            });
+                            let props = { "rootObj": popup, "tabIndex": tabContentWrapper.parentTabIndex };
+                            if (subData.pluginId) {
+                                props.pluginId = subData.pluginId;
+                                props.subTabIndex = subIndex;
+                            }
+                            setSource(subData.file, props);
                             if (item && item.subTabIndex !== undefined) {
                                 item.subTabIndex = subIndex;
                             }

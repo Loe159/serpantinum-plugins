@@ -192,7 +192,7 @@ Item {
     property int modulesRev: 0
 
     function registerModuleInstance(id, inst) {
-        moduleInstances[id] = inst;
+        moduleInstances[BarModuleRegistry.normalizeId(id)] = inst;
         modulesRev++;
     }
 
@@ -706,6 +706,31 @@ Item {
             Component.onCompleted: {
                 contentWrapper.registerModuleInstance(modelData, barMod);
             }
+        }
+    }
+
+
+    // Custom modules participate in the same layout, grouping and sizing as native modules.
+    Repeater {
+        id: pluginModules
+        model: PluginManager.barModules
+        delegate: PluginBarModule {
+            id: pluginMod
+            required property var modelData
+            moduleId: modelData.moduleId
+            pluginData: modelData.plugin
+            barEntryData: modelData.entry
+            barWindow: contentWrapper.barWindow
+            isSolid: contentWrapper.isSolid || contentWrapper.isFill
+            distinctPills: contentWrapper.distinctPills
+            moduleActive: contentWrapper.isModuleActive(moduleId) && PluginManager.isEnabled(pluginData)
+            isGrouped: contentWrapper.isModuleGrouped(moduleId)
+            targetX: contentWrapper.getModuleX(moduleId, contentWrapper.layoutState)
+            targetY: barWindow ? (barWindow.baseOffsetY + (barWindow.barHeight - pluginMod.height) / 2) : 0
+            layoutAnimationsEnabled: contentWrapper.layoutAnimationsEnabled
+
+            Component.onCompleted: contentWrapper.registerModuleInstance(moduleId, pluginMod)
+            Component.onDestruction: contentWrapper.registerModuleInstance(moduleId, null)
         }
     }
 

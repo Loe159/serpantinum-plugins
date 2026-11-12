@@ -153,8 +153,17 @@ Item {
         return tabModel && tabModel.subtabs ? tabModel.subtabs.findIndex(st => matchesTabKey(st, clean)) : -1;
     }
 
-    function tabTitle(model) {
-        return I18n.t("guide.tabs." + (model.key || model.id).toLowerCase());
+    // Plugin names are user-provided labels, not translation keys.
+    // For regular Guide tabs, fall back to the declared name when i18n has no entry.
+    function tabTitle(tabData) {
+        if (!tabData) return "";
+        if (tabData.translateTitle === false) return tabData.name || tabData.id || "";
+
+        let key = "guide.tabs." + String(tabData.key || tabData.id).toLowerCase();
+        let translated = I18n.t(key);
+        return translated && translated !== key
+            ? translated
+            : (tabData.name || tabData.id || key);
     }
 
     function resolveTabTitle(tabKey) {
@@ -647,6 +656,16 @@ Item {
         { id: "Screenshot", key: "screenshot", name: "Screenshot", icon: "󰹑", file: "screenshot/ScreenshotTab.qml" },
         { id: "Wellbeing", key: "wellbeing", name: "Wellbeing", icon: "󰄉", separatorBefore: true, file: "wellbeing/DigitalWellbeingTab.qml" },
         { id: "Idle", key: "idle", name: "Idle", icon: "󰒲", file: "IdleTab.qml" },
+        {
+            id: "Plugins", key: "plugins", name: "Plugins", icon: "󰏗",
+            file: "PluginsTab.qml", iconOffsetX: 0,
+            subtabs: [{ id: "PluginsOverview", key: "plugins_overview", name: "Overview", icon: "󰏗", file: "PluginsTab.qml" }]
+                .concat(PluginManager.settingsPlugins.map(p => ({
+                    id: "PluginSettings-" + p.id, key: "plugin-" + p.id,
+                    name: p.name || p.id, icon: p.icon || "󰏗", translateTitle: false,
+                    file: "PluginSettingsTab.qml", pluginId: p.id
+                })))
+        },
         { id: "About", key: "about", name: "About", icon: "󰋽", separatorBefore: true, file: "AboutTab.qml" }
     ]
 
